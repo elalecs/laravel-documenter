@@ -1,0 +1,12 @@
+### Validation Rule: {{ruleName}}
+
+#### Description:
+{{description}}
+
+#### Passes Method:
+{{passesMethod}}
+
+#### Message:
+{{message}}
+
+---

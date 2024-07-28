@@ -1,0 +1,12 @@
+### Event: {{eventName}}
+
+#### Description:
+{{description}}
+
+#### Properties:
+{{properties}}
+
+#### Listeners:
+{{listeners}}
+
+---

@@ -1,0 +1,21 @@
+{
+    "name": "elalecs/laravel-documenter",
+    "description": "An automated documentation generator for Laravel and Filament projects. It analyzes your project structure, including models, Filament resources, controllers, jobs, events, middlewares, and rules, to create comprehensive Markdown documentation. Ideal for quickly onboarding new developers or maintaining an up-to-date project overview.",
+    "type": "library",
+    "require": {
+        "php": "^7.3|^8.0",
+        "laravel/framework": "^8.0|^9.0|^10.0|^11.0"
+    },
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Elalecs\\LaravelDocumenter\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Alex Galindo",
+            "email": "aztkgeek@gmail.com"
+        }
+    ]
+}

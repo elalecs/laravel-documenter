@@ -1,0 +1,17 @@
+### Filament Resource: {{resourceName}}
+
+**Model:** {{modelName}}
+
+#### Form Fields:
+{{formFields}}
+
+#### Table Columns:
+{{tableColumns}}
+
+#### Filters:
+{{filters}}
+
+#### Actions:
+{{actions}}
+
+---
