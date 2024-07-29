@@ -40,6 +40,19 @@ Located in the `Generators/` directory, each generator is responsible for docume
 
 `config/laravel-documenter.php` allows users to customize the behavior of the package.
 
+### 6. Directory Structure
+
+The Laravel Documenter package is organized into the following main directories:
+
+- `src/`: Contains the core source code of the package.
+  - `Commands/`: Holds the Artisan commands, including `GenerateDocumentation.php`.
+  - `Generators/`: Contains individual generator classes for each component type.
+  - `Stubs/`: Stores stub files used as templates for generating documentation.
+- `config/`: Contains the configuration file `laravel-documenter.php`.
+- `tests/`: Holds the PHPUnit test files for the package.
+
+Understanding this structure is crucial when contributing to or extending the package.
+
 ## DocBlocks
 
 DocBlocks are crucial for the proper functioning of Laravel Documenter. When contributing to this project or using it in your own projects, please ensure that your code includes comprehensive DocBlocks. Here are some guidelines:
