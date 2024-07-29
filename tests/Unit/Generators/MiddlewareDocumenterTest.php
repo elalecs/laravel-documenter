@@ -4,8 +4,6 @@ use Elalecs\LaravelDocumenter\Generators\MiddlewareDocumenter;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\App;
 use Illuminate\Contracts\Http\Kernel;
-use ReflectionClass;
-use ReflectionMethod;
 
 beforeEach(function () {
     $this->config = [

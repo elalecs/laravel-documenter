@@ -3,8 +3,6 @@
 use Elalecs\LaravelDocumenter\Generators\EventDocumenter;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\App;
-use ReflectionClass;
-use ReflectionProperty;
 
 beforeEach(function () {
     $this->config = [

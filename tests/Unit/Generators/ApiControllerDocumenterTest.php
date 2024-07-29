@@ -2,9 +2,6 @@
 
 use Elalecs\LaravelDocumenter\Generators\ApiControllerDocumenter;
 use Illuminate\Support\Facades\File;
-use ReflectionClass;
-use ReflectionMethod;
-use ReflectionProperty;
 
 beforeEach(function () {
     $this->config = [

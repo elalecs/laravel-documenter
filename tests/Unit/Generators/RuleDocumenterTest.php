@@ -2,8 +2,6 @@
 
 use Elalecs\LaravelDocumenter\Generators\RuleDocumenter;
 use Illuminate\Support\Facades\File;
-use ReflectionClass;
-use ReflectionMethod;
 
 beforeEach(function () {
     $this->config = [
