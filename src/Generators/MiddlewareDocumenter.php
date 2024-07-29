@@ -73,7 +73,7 @@ class MiddlewareDocumenter
     protected function documentMiddleware($middlewareClass)
     {
         try {
-            $reflection = new ReflectionClass($middlewareClass);
+            $reflection = new \ReflectionClass($middlewareClass);
             $stub = File::get($this->stubPath);
 
             return strtr($stub, [
@@ -90,10 +90,10 @@ class MiddlewareDocumenter
 
     /**
      * @description Gets the middleware description from its DocBlock.
-     * @param ReflectionClass $reflection Reflection of the middleware class
+     * @param \ReflectionClass $reflection Reflection of the middleware class
      * @return string Description of the middleware
      */
-    protected function getMiddlewareDescription(ReflectionClass $reflection)
+    protected function getMiddlewareDescription(\ReflectionClass $reflection)
     {
         $docComment = $reflection->getDocComment();
         if (preg_match('/@description\s+(.+)/s', $docComment, $matches)) {
@@ -104,10 +104,10 @@ class MiddlewareDocumenter
 
     /**
      * @description Gets information about the middleware's handle method.
-     * @param ReflectionClass $reflection Reflection of the middleware class
+     * @param \ReflectionClass $reflection Reflection of the middleware class
      * @return string Documentation of the handle method
      */
-    protected function getHandleMethod(ReflectionClass $reflection)
+    protected function getHandleMethod(\ReflectionClass $reflection)
     {
         $handleMethod = $reflection->getMethod('handle');
         $docComment = $handleMethod->getDocComment();
@@ -125,10 +125,10 @@ class MiddlewareDocumenter
 
     /**
      * @description Gets the parameters of a method.
-     * @param ReflectionMethod $method Method to analyze
+     * @param \ReflectionMethod $method Method to analyze
      * @return string Documentation of the method parameters
      */
-    protected function getMethodParameters(ReflectionMethod $method)
+    protected function getMethodParameters(\ReflectionMethod $method)
     {
         $parameters = '';
         foreach ($method->getParameters() as $param) {

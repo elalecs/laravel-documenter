@@ -65,7 +65,7 @@ class EventDocumenter
      */
     protected function documentEvent($eventClass)
     {
-        $reflection = new ReflectionClass($eventClass);
+        $reflection = new \ReflectionClass($eventClass);
         $stub = File::get($this->stubPath);
 
         return strtr($stub, [
@@ -78,10 +78,10 @@ class EventDocumenter
 
     /**
      * @description Gets the event description from its DocBlock.
-     * @param ReflectionClass $reflection Reflection of the event class
+     * @param \ReflectionClass $reflection Reflection of the event class
      * @return string Event description
      */
-    protected function getEventDescription(ReflectionClass $reflection)
+    protected function getEventDescription(\ReflectionClass $reflection)
     {
         $docComment = $reflection->getDocComment();
         if (preg_match('/@description\s+(.+)/s', $docComment, $matches)) {
@@ -92,10 +92,10 @@ class EventDocumenter
 
     /**
      * @description Gets the public properties of the event.
-     * @param ReflectionClass $reflection Reflection of the event class
+     * @param \ReflectionClass $reflection Reflection of the event class
      * @return string Documentation of the properties
      */
-    protected function getEventProperties(ReflectionClass $reflection)
+    protected function getEventProperties(\ReflectionClass $reflection)
     {
         $properties = '';
         foreach ($reflection->getProperties(ReflectionProperty::IS_PUBLIC) as $property) {

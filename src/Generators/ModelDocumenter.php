@@ -71,7 +71,7 @@ class ModelDocumenter
     protected function documentModel($modelClass)
     {
         try {
-            $reflection = new ReflectionClass($modelClass);
+            $reflection = new \ReflectionClass($modelClass);
             $stub = File::get($this->stubPath);
 
             return strtr($stub, [
@@ -83,7 +83,7 @@ class ModelDocumenter
                 '{{scopes}}' => $this->getScopes($reflection),
                 '{{attributes}}' => $this->getAttributes($modelClass),
             ]);
-        } catch (ReflectionException $e) {
+        } catch (\ReflectionException $e) {
             // Log the error or handle it as needed
             return sprintf("Error documenting model %s: %s\n", $modelClass, $e->getMessage());
         }
@@ -91,10 +91,10 @@ class ModelDocumenter
 
     /**
      * @description Gets the model description from its DocBlock.
-     * @param ReflectionClass $reflection Reflection of the model class
+     * @param \ReflectionClass $reflection Reflection of the model class
      * @return string Description of the model
      */
-    protected function getModelDescription(ReflectionClass $reflection)
+    protected function getModelDescription(\ReflectionClass $reflection)
     {
         $docComment = $reflection->getDocComment();
         if (preg_match('/@description\s+(.+)/s', $docComment, $matches)) {
@@ -126,10 +126,10 @@ class ModelDocumenter
 
     /**
      * @description Gets the relationships of the model.
-     * @param ReflectionClass $reflection Reflection of the model class
+     * @param \ReflectionClass $reflection Reflection of the model class
      * @return string List of relationships
      */
-    protected function getRelationships(ReflectionClass $reflection)
+    protected function getRelationships(\ReflectionClass $reflection)
     {
         $relationships = [];
         foreach ($reflection->getMethods() as $method) {
@@ -142,10 +142,10 @@ class ModelDocumenter
 
     /**
      * @description Determines if a method is a relationship method.
-     * @param ReflectionMethod $method The method to check
+     * @param \ReflectionMethod $method The method to check
      * @return bool True if the method is a relationship method, false otherwise
      */
-    protected function isRelationshipMethod(ReflectionMethod $method)
+    protected function isRelationshipMethod(\ReflectionMethod $method)
     {
         $relationshipMethods = ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany', 'morphTo', 'morphMany', 'morphToMany'];
         $methodBody = $this->getMethodBody($method);
@@ -154,10 +154,10 @@ class ModelDocumenter
 
     /**
      * @description Gets the body of a method.
-     * @param ReflectionMethod $method The method to get the body from
+     * @param \ReflectionMethod $method The method to get the body from
      * @return string The body of the method
      */
-    protected function getMethodBody(ReflectionMethod $method)
+    protected function getMethodBody(\ReflectionMethod $method)
     {
         $filename = $method->getFileName();
         $start_line = $method->getStartLine() - 1;

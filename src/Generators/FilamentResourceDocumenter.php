@@ -76,7 +76,7 @@ class FilamentResourceDocumenter
     protected function documentResource($resourceClass)
     {
         try {
-            $reflection = new ReflectionClass($resourceClass);
+            $reflection = new \ReflectionClass($resourceClass);
             $stub = File::get($this->stubPath);
 
             return strtr($stub, [
@@ -95,10 +95,10 @@ class FilamentResourceDocumenter
 
     /**
      * @description Gets the name of the model associated with the resource.
-     * @param ReflectionClass $reflection Reflection of the resource class
+     * @param \ReflectionClass $reflection Reflection of the resource class
      * @return string Model name
      */
-    protected function getModelName(ReflectionClass $reflection)
+    protected function getModelName(\ReflectionClass $reflection)
     {
         $modelMethod = $reflection->getMethod('getModelLabel');
         return $modelMethod->invoke(null);
@@ -106,10 +106,10 @@ class FilamentResourceDocumenter
 
     /**
      * @description Gets the form fields of the resource.
-     * @param ReflectionClass $reflection Reflection of the resource class
+     * @param \ReflectionClass $reflection Reflection of the resource class
      * @return string Documentation of the form fields
      */
-    protected function getFormFields(ReflectionClass $reflection)
+    protected function getFormFields(\ReflectionClass $reflection)
     {
         $formMethod = $reflection->getMethod('form');
         $form = $formMethod->invoke(null);
@@ -120,10 +120,10 @@ class FilamentResourceDocumenter
 
     /**
      * @description Gets the table columns of the resource.
-     * @param ReflectionClass $reflection Reflection of the resource class
+     * @param \ReflectionClass $reflection Reflection of the resource class
      * @return string Documentation of the table columns
      */
-    protected function getTableColumns(ReflectionClass $reflection)
+    protected function getTableColumns(\ReflectionClass $reflection)
     {
         $tableMethod = $reflection->getMethod('table');
         $table = $tableMethod->invoke(null);
@@ -134,10 +134,10 @@ class FilamentResourceDocumenter
 
     /**
      * @description Gets the filters of the resource.
-     * @param ReflectionClass $reflection Reflection of the resource class
+     * @param \ReflectionClass $reflection Reflection of the resource class
      * @return string Documentation of the filters
      */
-    protected function getFilters(ReflectionClass $reflection)
+    protected function getFilters(\ReflectionClass $reflection)
     {
         if (!$reflection->hasMethod('getFilters')) {
             return 'No filters defined.';
@@ -151,10 +151,10 @@ class FilamentResourceDocumenter
 
     /**
      * @description Gets the actions of the resource.
-     * @param ReflectionClass $reflection Reflection of the resource class
+     * @param \ReflectionClass $reflection Reflection of the resource class
      * @return string Documentation of the actions
      */
-    protected function getActions(ReflectionClass $reflection)
+    protected function getActions(\ReflectionClass $reflection)
     {
         $actions = '';
         $actionMethods = ['getActions', 'getTableActions', 'getHeaderActions'];

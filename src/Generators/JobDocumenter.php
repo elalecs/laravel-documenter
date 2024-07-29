@@ -84,7 +84,7 @@ class JobDocumenter
     protected function documentJob($jobClass)
     {
         try {
-            $reflection = new ReflectionClass($jobClass);
+            $reflection = new \ReflectionClass($jobClass);
             $stub = File::get($this->stubPath);
 
             return strtr($stub, [
@@ -104,11 +104,11 @@ class JobDocumenter
     /**
      * Gets the execution queue of the job.
      *
-     * @param ReflectionClass $reflection Reflection of the job class
+     * @param \ReflectionClass $reflection Reflection of the job class
      * @return string Execution queue of the job
      * @description Retrieves the queue property value of the job if it exists.
      */
-    protected function getJobQueue(ReflectionClass $reflection)
+    protected function getJobQueue(\ReflectionClass $reflection)
     {
         if ($reflection->hasProperty('queue')) {
             $queueProperty = $reflection->getProperty('queue');
@@ -121,11 +121,11 @@ class JobDocumenter
     /**
      * Gets the job description from its DocBlock.
      *
-     * @param ReflectionClass $reflection Reflection of the job class
+     * @param \ReflectionClass $reflection Reflection of the job class
      * @return string Job description
      * @description Extracts the description from the job class's DocBlock.
      */
-    protected function getJobDescription(ReflectionClass $reflection)
+    protected function getJobDescription(\ReflectionClass $reflection)
     {
         $docComment = $reflection->getDocComment();
         if (preg_match('/@description\s+(.+)/s', $docComment, $matches)) {
@@ -137,11 +137,11 @@ class JobDocumenter
     /**
      * Gets the constructor parameters of the job.
      *
-     * @param ReflectionClass $reflection Reflection of the job class
+     * @param \ReflectionClass $reflection Reflection of the job class
      * @return string Documentation of the constructor parameters
      * @description Generates documentation for the job's constructor parameters.
      */
-    protected function getConstructorParameters(ReflectionClass $reflection)
+    protected function getConstructorParameters(\ReflectionClass $reflection)
     {
         $constructor = $reflection->getConstructor();
         if (!$constructor) {
@@ -166,11 +166,11 @@ class JobDocumenter
     /**
      * Gets information about the job's handle method.
      *
-     * @param ReflectionClass $reflection Reflection of the job class
+     * @param \ReflectionClass $reflection Reflection of the job class
      * @return string Documentation of the handle method
      * @description Generates documentation for the job's handle method.
      */
-    protected function getHandleMethod(ReflectionClass $reflection)
+    protected function getHandleMethod(\ReflectionClass $reflection)
     {
         $handleMethod = $reflection->getMethod('handle');
         $docComment = $handleMethod->getDocComment();
@@ -189,11 +189,11 @@ class JobDocumenter
     /**
      * Gets the parameters of a method.
      *
-     * @param ReflectionMethod $method Method to get parameters from
+     * @param \ReflectionMethod $method Method to get parameters from
      * @return string Documentation of the parameters
      * @description Generates documentation for a method's parameters.
      */
-    protected function getMethodParameters(ReflectionMethod $method)
+    protected function getMethodParameters(\ReflectionMethod $method)
     {
         $parameters = '';
         foreach ($method->getParameters() as $param) {
@@ -209,11 +209,11 @@ class JobDocumenter
     /**
      * Gets information about the interfaces implemented by the job.
      *
-     * @param ReflectionClass $reflection Reflection of the job class
+     * @param \ReflectionClass $reflection Reflection of the job class
      * @return string Information about implemented interfaces
      * @description Retrieves and formats information about interfaces implemented by the job.
      */
-    protected function getImplementedInterfaces(ReflectionClass $reflection)
+    protected function getImplementedInterfaces(\ReflectionClass $reflection)
     {
         $interfaces = $reflection->getInterfaceNames();
         if (empty($interfaces)) {

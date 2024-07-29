@@ -63,7 +63,7 @@ class RuleDocumenter
     protected function documentRule($ruleClass)
     {
         try {
-            $reflection = new ReflectionClass($ruleClass);
+            $reflection = new \ReflectionClass($ruleClass);
             $stub = File::get($this->stubPath);
 
             return strtr($stub, [
@@ -81,10 +81,10 @@ class RuleDocumenter
 
     /**
      * @description Gets the rule description from its DocBlock.
-     * @param ReflectionClass $reflection Reflection of the rule class
+     * @param \ReflectionClass $reflection Reflection of the rule class
      * @return string Description of the rule
      */
-    protected function getRuleDescription(ReflectionClass $reflection)
+    protected function getRuleDescription(\ReflectionClass $reflection)
     {
         $docComment = $reflection->getDocComment();
         if (preg_match('/@description\s+(.+)/s', $docComment, $matches)) {
@@ -95,10 +95,10 @@ class RuleDocumenter
 
     /**
      * @description Gets information about the rule's passes method.
-     * @param ReflectionClass $reflection Reflection of the rule class
+     * @param \ReflectionClass $reflection Reflection of the rule class
      * @return string Documentation of the passes method
      */
-    protected function getPassesMethod(ReflectionClass $reflection)
+    protected function getPassesMethod(\ReflectionClass $reflection)
     {
         $passesMethod = $reflection->getMethod('passes');
         $docComment = $passesMethod->getDocComment();
@@ -116,10 +116,10 @@ class RuleDocumenter
 
     /**
      * @description Gets the rule's error message.
-     * @param ReflectionClass $reflection Reflection of the rule class
+     * @param \ReflectionClass $reflection Reflection of the rule class
      * @return string Error message of the rule
      */
-    protected function getMessage(ReflectionClass $reflection)
+    protected function getMessage(\ReflectionClass $reflection)
     {
         if ($reflection->hasMethod('message')) {
             $messageMethod = $reflection->getMethod('message');
@@ -128,16 +128,17 @@ class RuleDocumenter
             if (preg_match('/@return\s+(.+)/', $docComment, $matches)) {
                 return trim($matches[1]);
             }
+            return 'No custom error message provided.';
         }
         return 'Default Laravel validation message.';
     }
 
     /**
      * @description Gets the rule's constructor parameters.
-     * @param ReflectionClass $reflection Reflection of the rule class
+     * @param \ReflectionClass $reflection Reflection of the rule class
      * @return string Documentation of the constructor parameters
      */
-    protected function getConstructorParameters(ReflectionClass $reflection)
+    protected function getConstructorParameters(\ReflectionClass $reflection)
     {
         $constructor = $reflection->getConstructor();
         if (!$constructor) {
@@ -161,10 +162,10 @@ class RuleDocumenter
 
     /**
      * @description Gets the parameters of a method.
-     * @param ReflectionMethod $method Method to analyze
+     * @param \ReflectionMethod $method Method to analyze
      * @return string Documentation of the method parameters
      */
-    protected function getMethodParameters(ReflectionMethod $method)
+    protected function getMethodParameters(\ReflectionMethod $method)
     {
         $parameters = '';
         foreach ($method->getParameters() as $param) {

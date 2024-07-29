@@ -60,7 +60,7 @@ class ApiControllerDocumenter
     protected function documentController($controllerClass)
     {
         try {
-            $reflection = new ReflectionClass($controllerClass);
+            $reflection = new \ReflectionClass($controllerClass);
             $stub = File::get($this->stubPath);
 
             return strtr($stub, [
@@ -76,10 +76,10 @@ class ApiControllerDocumenter
         }
     }
 
-    protected function getEndpoints(ReflectionClass $reflection)
+    protected function getEndpoints(\ReflectionClass $reflection)
     {
         $endpoints = '';
-        $methods = $reflection->getMethods(ReflectionMethod::IS_PUBLIC);
+        $methods = $reflection->getMethods(\ReflectionMethod::IS_PUBLIC);
 
         foreach ($methods as $method) {
             if ($this->isEndpointMethod($method)) {
@@ -92,10 +92,10 @@ class ApiControllerDocumenter
 
     /**
      * @description Determines if a method is an API endpoint.
-     * @param ReflectionMethod $method Method to evaluate
+     * @param \ReflectionMethod $method Method to evaluate
      * @return bool
      */
-    protected function isEndpointMethod(ReflectionMethod $method)
+    protected function isEndpointMethod(\ReflectionMethod $method)
     {
         $httpMethods = ['get', 'post', 'put', 'patch', 'delete'];
         return !$method->isConstructor() && 
@@ -105,10 +105,10 @@ class ApiControllerDocumenter
 
     /**
      * @description Documents an individual endpoint.
-     * @param ReflectionMethod $method Endpoint method
+     * @param \ReflectionMethod $method Endpoint method
      * @return string Endpoint documentation
      */
-    protected function documentEndpoint(ReflectionMethod $method)
+    protected function documentEndpoint(\ReflectionMethod $method)
     {
         $docComment = $method->getDocComment();
         $httpMethod = $this->getHttpMethodFromDocComment($docComment);
