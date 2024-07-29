@@ -6,10 +6,21 @@
         "php": "^7.3|^8.0",
         "laravel/framework": "^8.0|^9.0|^10.0|^11.0"
     },
+    "require-dev": {
+        "pestphp/pest": "^1.22",
+        "pestphp/pest-plugin-laravel": "^1.2",
+        "mockery/mockery": "^1.4",
+        "orchestra/testbench": "^6.0|^7.0|^8.0"
+    },
     "license": "MIT",
     "autoload": {
         "psr-4": {
             "Elalecs\\LaravelDocumenter\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Elalecs\\LaravelDocumenter\\Tests\\": "tests/"
         }
     },
     "authors": [
@@ -17,5 +28,24 @@
             "name": "Alex Galindo",
             "email": "aztkgeek@gmail.com"
         }
-    ]
+    ],
+    "scripts": {
+        "test": "vendor/bin/pest",
+        "test-coverage": "vendor/bin/pest --coverage --coverage-html coverage"
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Elalecs\\LaravelDocumenter\\LaravelDocumenterServiceProvider"
+            ]
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
 }
