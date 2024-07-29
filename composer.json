@@ -31,6 +31,8 @@
     ],
     "scripts": {
         "test": "vendor/bin/pest",
+        "test-feature": "vendor/bin/pest tests/Feature",
+        "test-unit": "vendor/bin/pest tests/Unit",
         "test-coverage": "vendor/bin/pest --coverage --coverage-html coverage"
     },
     "config": {
