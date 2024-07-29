@@ -6,18 +6,30 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use ReflectionClass;
 use ReflectionMethod;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Select;
+use Filament\Tables\Columns\Column;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Actions\Action;
 
 /**
- * @description Clase para documentar recursos de Filament.
+ * @description Class for documenting Filament resources.
  */
 class FilamentResourceDocumenter
 {
+    /**
+     * @var array The configuration array for the documenter.
+     */
     protected $config;
+
+    /**
+     * @var string The path to the stub file for Filament resources.
+     */
     protected $stubPath;
 
     /**
-     * @description Constructor de la clase FilamentResourceDocumenter.
-     * @param array $config Configuración del documentador
+     * @description Constructor of the FilamentResourceDocumenter class.
+     * @param array $config Documenter configuration
      */
     public function __construct($config)
     {
@@ -26,8 +38,8 @@ class FilamentResourceDocumenter
     }
 
     /**
-     * @description Genera la documentación para todos los recursos de Filament.
-     * @return string Documentación generada
+     * @description Generates documentation for all Filament resources.
+     * @return string Generated documentation
      */
     public function generate()
     {
@@ -42,8 +54,8 @@ class FilamentResourceDocumenter
     }
 
     /**
-     * @description Obtiene la lista de recursos de Filament.
-     * @return array Lista de nombres de clase de recursos
+     * @description Gets the list of Filament resources.
+     * @return array List of resource class names
      */
     protected function getFilamentResources()
     {
@@ -59,9 +71,9 @@ class FilamentResourceDocumenter
     }
 
     /**
-     * @description Documenta un recurso individual de Filament.
-     * @param string $resourceClass Nombre de la clase del recurso
-     * @return string Documentación del recurso
+     * @description Documents an individual Filament resource.
+     * @param string $resourceClass Name of the resource class
+     * @return string Resource documentation
      */
     protected function documentResource($resourceClass)
     {
@@ -78,15 +90,15 @@ class FilamentResourceDocumenter
                 '{{actions}}' => $this->getActions($reflection),
             ]);
         } catch (\ReflectionException $e) {
-            // Registrar el error o manejarlo según sea necesario
-            return sprintf("Error al documentar el recurso %s: %s\n", $resourceClass, $e->getMessage());
+            // Log the error or handle it as needed
+            return sprintf("Error documenting resource %s: %s\n", $resourceClass, $e->getMessage());
         }
     }
 
     /**
-     * @description Obtiene el nombre del modelo asociado al recurso.
-     * @param ReflectionClass $reflection Reflexión de la clase del recurso
-     * @return string Nombre del modelo
+     * @description Gets the name of the model associated with the resource.
+     * @param ReflectionClass $reflection Reflection of the resource class
+     * @return string Model name
      */
     protected function getModelName(ReflectionClass $reflection)
     {
@@ -95,9 +107,9 @@ class FilamentResourceDocumenter
     }
 
     /**
-     * @description Obtiene los campos del formulario del recurso.
-     * @param ReflectionClass $reflection Reflexión de la clase del recurso
-     * @return string Documentación de los campos del formulario
+     * @description Gets the form fields of the resource.
+     * @param ReflectionClass $reflection Reflection of the resource class
+     * @return string Documentation of the form fields
      */
     protected function getFormFields(ReflectionClass $reflection)
     {
@@ -105,13 +117,13 @@ class FilamentResourceDocumenter
         $form = $formMethod->invoke(null);
         $fields = $form->getSchema();
 
-        return $this->formatSchemaComponents($fields, 'Campos del formulario');
+        return $this->formatSchemaComponents($fields, 'Form Fields');
     }
 
     /**
-     * @description Obtiene las columnas de la tabla del recurso.
-     * @param ReflectionClass $reflection Reflexión de la clase del recurso
-     * @return string Documentación de las columnas de la tabla
+     * @description Gets the table columns of the resource.
+     * @param ReflectionClass $reflection Reflection of the resource class
+     * @return string Documentation of the table columns
      */
     protected function getTableColumns(ReflectionClass $reflection)
     {
@@ -119,13 +131,13 @@ class FilamentResourceDocumenter
         $table = $tableMethod->invoke(null);
         $columns = $table->getColumns();
 
-        return $this->formatSchemaComponents($columns, 'Columnas de la tabla');
+        return $this->formatSchemaComponents($columns, 'Table Columns');
     }
 
     /**
-     * @description Obtiene los filtros del recurso.
-     * @param ReflectionClass $reflection Reflexión de la clase del recurso
-     * @return string Documentación de los filtros
+     * @description Gets the filters of the resource.
+     * @param ReflectionClass $reflection Reflection of the resource class
+     * @return string Documentation of the filters
      */
     protected function getFilters(ReflectionClass $reflection)
     {
@@ -136,13 +148,13 @@ class FilamentResourceDocumenter
         $filtersMethod = $reflection->getMethod('getFilters');
         $filters = $filtersMethod->invoke(null);
 
-        return $this->formatSchemaComponents($filters, 'Filtros');
+        return $this->formatSchemaComponents($filters, 'Filters');
     }
 
     /**
-     * @description Obtiene las acciones del recurso.
-     * @param ReflectionClass $reflection Reflexión de la clase del recurso
-     * @return string Documentación de las acciones
+     * @description Gets the actions of the resource.
+     * @param ReflectionClass $reflection Reflection of the resource class
+     * @return string Documentation of the actions
      */
     protected function getActions(ReflectionClass $reflection)
     {
@@ -161,10 +173,10 @@ class FilamentResourceDocumenter
     }
 
     /**
-     * @description Formatea los componentes del esquema.
-     * @param array $components Componentes a formatear
-     * @param string $title Título de la sección
-     * @return string Componentes formateados
+     * @description Formats the schema components.
+     * @param array $components Components to format
+     * @param string $title Section title
+     * @return string Formatted components
      */
     protected function formatSchemaComponents($components, $title)
     {
@@ -172,47 +184,52 @@ class FilamentResourceDocumenter
         foreach ($components as $component) {
             $formatted .= sprintf("- **%s**: %s\n", $component->getName(), $this->getComponentDescription($component));
         }
-        return $formatted ?: "No se definieron $title.\n";
+        return $formatted ?: "No $title defined.\n";
     }
 
     /**
-     * @description Obtiene la descripción de un componente.
-     * @param mixed $component Componente a describir
-     * @return string Descripción del componente
+     * @description Gets the description of a component.
+     * @param mixed $component Component to describe
+     * @return string Component description
      */
     protected function getComponentDescription($component)
     {
         $description = '';
 
-        // Obtener el tipo de componente
+        // Get component type
         $componentType = class_basename($component);
-        $description .= "Tipo: $componentType. ";
+        $description .= "Type: $componentType. ";
 
-        // Obtener el label si está disponible
+        // Get label if available
         if (method_exists($component, 'getLabel')) {
             $label = $component->getLabel();
-            $description .= "Etiqueta: '$label'. ";
+            $description .= "Label: '$label'. ";
         }
 
-        // Obtener las validaciones si están disponibles
+        // Get validations if available
         if (method_exists($component, 'getValidationRules')) {
             $rules = $component->getValidationRules();
             if (!empty($rules)) {
-                $description .= "Validaciones: " . implode(', ', $rules) . ". ";
+                $description .= "Validations: " . implode(', ', $rules) . ". ";
             }
         }
 
-        // Obtener información adicional específica del tipo de componente
+        // Get additional information specific to the component type
         if ($componentType === 'TextInput') {
             $description .= $this->getTextInputDetails($component);
         } elseif ($componentType === 'Select') {
             $description .= $this->getSelectDetails($component);
         }
-        // Agregar más condiciones para otros tipos de componentes según sea necesario
+        // Add more conditions for other component types as needed
 
         return trim($description);
     }
 
+    /**
+     * @description Gets additional details for TextInput components.
+     * @param TextInput $component The TextInput component
+     * @return string Additional details for the TextInput
+     */
     private function getTextInputDetails($component)
     {
         $details = '';
@@ -225,13 +242,18 @@ class FilamentResourceDocumenter
         return $details;
     }
 
+    /**
+     * @description Gets additional details for Select components.
+     * @param Select $component The Select component
+     * @return string Additional details for the Select
+     */
     private function getSelectDetails($component)
     {
         $details = '';
         if (method_exists($component, 'getOptions')) {
             $options = $component->getOptions();
             if (!empty($options)) {
-                $details .= "Opciones: " . implode(', ', array_keys($options)) . ". ";
+                $details .= "Options: " . implode(', ', array_keys($options)) . ". ";
             }
         }
         return $details;

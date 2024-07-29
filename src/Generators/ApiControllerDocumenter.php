@@ -6,9 +6,11 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use ReflectionClass;
 use ReflectionMethod;
+use Illuminate\Support\Collection;
+use Illuminate\Contracts\Filesystem\FileNotFoundException;
 
 /**
- * @description Clase para documentar controladores API de Laravel.
+ * @description Class for documenting Laravel API controllers.
  */
 class ApiControllerDocumenter
 {
@@ -22,8 +24,8 @@ class ApiControllerDocumenter
     }
 
     /**
-     * @description Genera la documentación para todos los controladores API.
-     * @return string Documentación generada
+     * @description Generates documentation for all API controllers.
+     * @return string Generated documentation
      */
     public function generate()
     {
@@ -38,8 +40,8 @@ class ApiControllerDocumenter
     }
 
     /**
-     * @description Obtiene la lista de controladores API.
-     * @return array Lista de nombres de clase de controladores
+     * @description Gets the list of API controllers.
+     * @return array List of controller class names
      */
     protected function getApiControllers()
     {
@@ -52,10 +54,10 @@ class ApiControllerDocumenter
     }
 
     /**
-     * @description Documenta un controlador individual.
-     * @param string $controllerClass Nombre de la clase del controlador
-     * @return string Documentación del controlador
-     * @throws \ReflectionException Si la clase no existe
+     * @description Documents an individual controller.
+     * @param string $controllerClass Name of the controller class
+     * @return string Controller documentation
+     * @throws \ReflectionException If the class doesn't exist
      */
     protected function documentController($controllerClass)
     {
@@ -68,8 +70,11 @@ class ApiControllerDocumenter
                 '{{endpoints}}' => $this->getEndpoints($reflection),
             ]);
         } catch (\ReflectionException $e) {
-            // Registrar el error o manejarlo según sea necesario
-            return sprintf("Error al documentar el controlador %s: %s\n", $controllerClass, $e->getMessage());
+            // Log the error or handle it as needed
+            return sprintf("Error documenting controller %s: %s\n", $controllerClass, $e->getMessage());
+        } catch (FileNotFoundException $e) {
+            // Handle file not found exception
+            return sprintf("Error: Stub file not found for controller %s\n", $controllerClass);
         }
     }
 
@@ -88,8 +93,8 @@ class ApiControllerDocumenter
     }
 
     /**
-     * @description Determina si un método es un endpoint de API.
-     * @param ReflectionMethod $method Método a evaluar
+     * @description Determines if a method is an API endpoint.
+     * @param ReflectionMethod $method Method to evaluate
      * @return bool
      */
     protected function isEndpointMethod(ReflectionMethod $method)
@@ -101,9 +106,9 @@ class ApiControllerDocumenter
     }
 
     /**
-     * @description Documenta un endpoint individual.
-     * @param ReflectionMethod $method Método del endpoint
-     * @return string Documentación del endpoint
+     * @description Documents an individual endpoint.
+     * @param ReflectionMethod $method Endpoint method
+     * @return string Endpoint documentation
      */
     protected function documentEndpoint(ReflectionMethod $method)
     {
@@ -138,15 +143,15 @@ class ApiControllerDocumenter
     }
 
     /**
-     * @description Extrae la descripción del DocBlock.
-     * @param string $docComment DocBlock completo
-     * @return string Descripción extraída
+     * @description Extracts the description from the DocBlock.
+     * @param string $docComment Full DocBlock
+     * @return string Extracted description
      */
     protected function getDescriptionFromDocComment($docComment)
     {
         if (preg_match('/@description\s+(.+)/s', $docComment, $matches)) {
             return trim($matches[1]);
         }
-        return 'Sin descripción disponible.';
+        return 'No description available.';
     }
 }

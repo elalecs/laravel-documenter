@@ -1,21 +1,31 @@
 <?php
 
-namespace YourCompany\LaravelDocumenter\Generators;
+namespace Elalecs\LaravelDocumenter\Generators;
 
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
+use ReflectionClass;
+use ReflectionMethod;
+use ReflectionException;
 
 /**
- * @description Clase para documentar modelos de Laravel.
+ * @description Class for documenting Laravel models.
  */
 class ModelDocumenter
 {
+    /**
+     * @var array The configuration array for the documenter.
+     */
     protected $config;
+
+    /**
+     * @var string The path to the stub file for models.
+     */
     protected $stubPath;
 
     /**
-     * @description Constructor de la clase ModelDocumenter.
-     * @param array $config Configuración del documentador
+     * @description Constructor of the ModelDocumenter class.
+     * @param array $config Documenter configuration
      */
     public function __construct($config)
     {
@@ -24,8 +34,8 @@ class ModelDocumenter
     }
 
     /**
-     * @description Genera la documentación para todos los modelos.
-     * @return string Documentación generada
+     * @description Generates documentation for all models.
+     * @return string Generated documentation
      */
     public function generate()
     {
@@ -40,8 +50,8 @@ class ModelDocumenter
     }
 
     /**
-     * @description Obtiene la lista de modelos del proyecto.
-     * @return array Lista de nombres de clase de modelos
+     * @description Gets the list of models from the project.
+     * @return array List of model class names
      */
     protected function getModels()
     {
@@ -57,14 +67,14 @@ class ModelDocumenter
     }
 
     /**
-     * @description Documenta un modelo individual.
-     * @param string $modelClass Nombre de la clase del modelo
-     * @return string Documentación del modelo
+     * @description Documents an individual model.
+     * @param string $modelClass Name of the model class
+     * @return string Documentation of the model
      */
     protected function documentModel($modelClass)
     {
         try {
-            $reflection = new \ReflectionClass($modelClass);
+            $reflection = new ReflectionClass($modelClass);
             $stub = File::get($this->stubPath);
 
             return strtr($stub, [
@@ -76,16 +86,16 @@ class ModelDocumenter
                 '{{scopes}}' => $this->getScopes($reflection),
                 '{{attributes}}' => $this->getAttributes($modelClass),
             ]);
-        } catch (\ReflectionException $e) {
-            // Registrar el error o manejarlo según sea necesario
-            return sprintf("Error al documentar el modelo %s: %s\n", $modelClass, $e->getMessage());
+        } catch (ReflectionException $e) {
+            // Log the error or handle it as needed
+            return sprintf("Error documenting model %s: %s\n", $modelClass, $e->getMessage());
         }
     }
 
     /**
-     * @description Obtiene la descripción del modelo desde su DocBlock.
-     * @param ReflectionClass $reflection Reflexión de la clase del modelo
-     * @return string Descripción del modelo
+     * @description Gets the model description from its DocBlock.
+     * @param ReflectionClass $reflection Reflection of the model class
+     * @return string Description of the model
      */
     protected function getModelDescription(ReflectionClass $reflection)
     {
@@ -93,13 +103,13 @@ class ModelDocumenter
         if (preg_match('/@description\s+(.+)/s', $docComment, $matches)) {
             return trim($matches[1]);
         }
-        return 'No se proporcionó descripción.';
+        return 'No description provided.';
     }
 
     /**
-     * @description Obtiene la tabla asociada al modelo.
-     * @param string $modelClass Nombre de la clase del modelo
-     * @return string Nombre de la tabla
+     * @description Gets the table associated with the model.
+     * @param string $modelClass Name of the model class
+     * @return string Name of the table
      */
     protected function getTableName($modelClass)
     {
@@ -107,22 +117,22 @@ class ModelDocumenter
     }
 
     /**
-     * @description Obtiene los atributos fillable del modelo.
-     * @param string $modelClass Nombre de la clase del modelo
-     * @return string Lista de atributos fillable
+     * @description Gets the fillable attributes of the model.
+     * @param string $modelClass Name of the model class
+     * @return string List of fillable attributes
      */
     protected function getFillable($modelClass)
     {
         $fillable = (new $modelClass)->getFillable();
-        return implode(', ', $fillable) ?: 'No se definieron atributos fillable.';
+        return implode(', ', $fillable) ?: 'No fillable attributes defined.';
     }
 
     /**
-     * @description Obtiene las relaciones del modelo.
-     * @param ReflectionClass $reflection Reflexión de la clase del modelo
-     * @return string Lista de relaciones
+     * @description Gets the relationships of the model.
+     * @param ReflectionClass $reflection Reflection of the model class
+     * @return string List of relationships
      */
-    protected function getRelationships(\ReflectionClass $reflection)
+    protected function getRelationships(ReflectionClass $reflection)
     {
         $relationships = [];
         foreach ($reflection->getMethods() as $method) {
@@ -133,14 +143,24 @@ class ModelDocumenter
         return implode(', ', $relationships);
     }
 
-    protected function isRelationshipMethod(\ReflectionMethod $method)
+    /**
+     * @description Determines if a method is a relationship method.
+     * @param ReflectionMethod $method The method to check
+     * @return bool True if the method is a relationship method, false otherwise
+     */
+    protected function isRelationshipMethod(ReflectionMethod $method)
     {
         $relationshipMethods = ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany', 'morphTo', 'morphMany', 'morphToMany'];
         $methodBody = $this->getMethodBody($method);
         return Str::contains($methodBody, $relationshipMethods);
     }
 
-    protected function getMethodBody(\ReflectionMethod $method)
+    /**
+     * @description Gets the body of a method.
+     * @param ReflectionMethod $method The method to get the body from
+     * @return string The body of the method
+     */
+    protected function getMethodBody(ReflectionMethod $method)
     {
         $filename = $method->getFileName();
         $start_line = $method->getStartLine() - 1;

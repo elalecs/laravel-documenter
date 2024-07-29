@@ -4,11 +4,26 @@ namespace Elalecs\LaravelDocumenter;
 
 use Illuminate\Support\ServiceProvider;
 use Elalecs\LaravelDocumenter\Commands\GenerateDocumentation;
+use Elalecs\LaravelDocumenter\Generators\ModelDocumenter;
+use Elalecs\LaravelDocumenter\Generators\FilamentResourceDocumenter;
+use Elalecs\LaravelDocumenter\Generators\ApiControllerDocumenter;
+use Elalecs\LaravelDocumenter\Generators\JobDocumenter;
+use Elalecs\LaravelDocumenter\Generators\EventDocumenter;
+use Elalecs\LaravelDocumenter\Generators\MiddlewareDocumenter;
+use Elalecs\LaravelDocumenter\Generators\RuleDocumenter;
 
+/**
+ * Laravel Documenter Service Provider
+ *
+ * This service provider bootstraps the Laravel Documenter package,
+ * registering its config, commands, and services.
+ */
 class LaravelDocumenterServiceProvider extends ServiceProvider
 {
     /**
      * Bootstrap the application services.
+     *
+     * @return void
      */
     public function boot()
     {
@@ -25,6 +40,8 @@ class LaravelDocumenterServiceProvider extends ServiceProvider
 
     /**
      * Register the application services.
+     *
+     * @return void
      */
     public function register()
     {
@@ -44,17 +61,22 @@ class LaravelDocumenterServiceProvider extends ServiceProvider
 
     /**
      * Register all the document generators.
+     *
+     * This method binds each generator class to the service container
+     * with a unique key for easy retrieval.
+     *
+     * @return void
      */
     protected function registerGenerators()
     {
         $generators = [
-            'model' => Generators\ModelDocumenter::class,
-            'filament-resource' => Generators\FilamentResourceDocumenter::class,
-            'api-controller' => Generators\ApiControllerDocumenter::class,
-            'job' => Generators\JobDocumenter::class,
-            'event' => Generators\EventDocumenter::class,
-            'middleware' => Generators\MiddlewareDocumenter::class,
-            'rule' => Generators\RuleDocumenter::class,
+            'model' => ModelDocumenter::class,
+            'filament-resource' => FilamentResourceDocumenter::class,
+            'api-controller' => ApiControllerDocumenter::class,
+            'job' => JobDocumenter::class,
+            'event' => EventDocumenter::class,
+            'middleware' => MiddlewareDocumenter::class,
+            'rule' => RuleDocumenter::class,
         ];
 
         foreach ($generators as $key => $class) {

@@ -6,9 +6,12 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use ReflectionClass;
 use ReflectionProperty;
+use Illuminate\Support\Facades\App;
+use Illuminate\Contracts\Foundation\Application;
+use Exception;
 
 /**
- * @description Clase para documentar eventos de Laravel.
+ * @description Class for documenting Laravel events.
  */
 class EventDocumenter
 {
@@ -16,8 +19,8 @@ class EventDocumenter
     protected $stubPath;
 
     /**
-     * @description Constructor de la clase EventDocumenter.
-     * @param array $config Configuración del documentador
+     * @description Constructor of the EventDocumenter class.
+     * @param array $config Documenter configuration
      */
     public function __construct($config)
     {
@@ -26,8 +29,8 @@ class EventDocumenter
     }
 
     /**
-     * @description Genera la documentación para todos los eventos.
-     * @return string Documentación generada
+     * @description Generates documentation for all events.
+     * @return string Generated documentation
      */
     public function generate()
     {
@@ -42,8 +45,8 @@ class EventDocumenter
     }
 
     /**
-     * @description Obtiene la lista de eventos del proyecto.
-     * @return array Lista de nombres de clase de eventos
+     * @description Gets the list of events from the project.
+     * @return array List of event class names
      */
     protected function getEvents()
     {
@@ -59,9 +62,9 @@ class EventDocumenter
     }
 
     /**
-     * @description Documenta un evento individual.
-     * @param string $eventClass Nombre de la clase del evento
-     * @return string Documentación del evento
+     * @description Documents an individual event.
+     * @param string $eventClass Name of the event class
+     * @return string Event documentation
      */
     protected function documentEvent($eventClass)
     {
@@ -77,9 +80,9 @@ class EventDocumenter
     }
 
     /**
-     * @description Obtiene la descripción del evento desde su DocBlock.
-     * @param ReflectionClass $reflection Reflexión de la clase del evento
-     * @return string Descripción del evento
+     * @description Gets the event description from its DocBlock.
+     * @param ReflectionClass $reflection Reflection of the event class
+     * @return string Event description
      */
     protected function getEventDescription(ReflectionClass $reflection)
     {
@@ -87,13 +90,13 @@ class EventDocumenter
         if (preg_match('/@description\s+(.+)/s', $docComment, $matches)) {
             return trim($matches[1]);
         }
-        return 'No se proporcionó descripción.';
+        return 'No description provided.';
     }
 
     /**
-     * @description Obtiene las propiedades públicas del evento.
-     * @param ReflectionClass $reflection Reflexión de la clase del evento
-     * @return string Documentación de las propiedades
+     * @description Gets the public properties of the event.
+     * @param ReflectionClass $reflection Reflection of the event class
+     * @return string Documentation of the properties
      */
     protected function getEventProperties(ReflectionClass $reflection)
     {
@@ -102,19 +105,19 @@ class EventDocumenter
             $properties .= sprintf("- `%s`\n", $property->getName());
             $docComment = $property->getDocComment();
             if (preg_match('/@var\s+(.+)/', $docComment, $matches)) {
-                $properties .= sprintf("  Tipo: %s\n", trim($matches[1]));
+                $properties .= sprintf("  Type: %s\n", trim($matches[1]));
             }
             if (preg_match('/@description\s+(.+)/s', $docComment, $matches)) {
-                $properties .= sprintf("  Descripción: %s\n", trim($matches[1]));
+                $properties .= sprintf("  Description: %s\n", trim($matches[1]));
             }
         }
-        return $properties ?: 'No hay propiedades públicas.';
+        return $properties ?: 'No public properties.';
     }
 
     /**
-     * @description Obtiene los listeners registrados para el evento.
-     * @param string $eventClass Nombre de la clase del evento
-     * @return string Lista de listeners
+     * @description Gets the registered listeners for the event.
+     * @param string $eventClass Name of the event class
+     * @return string List of listeners
      */
     protected function getEventListeners($eventClass)
     {
@@ -130,11 +133,11 @@ class EventDocumenter
                     $listeners .= sprintf("- %s\n", $listener);
                 }
             }
-        } catch (\Exception $e) {
-            // Registrar el error o manejarlo según sea necesario
-            $listeners = "Error al obtener listeners: " . $e->getMessage() . "\n";
+        } catch (Exception $e) {
+            // Log the error or handle it as needed
+            $listeners = "Error getting listeners: " . $e->getMessage() . "\n";
         }
         
-        return $listeners ?: 'No hay listeners registrados.';
+        return $listeners ?: 'No registered listeners.';
     }
 }

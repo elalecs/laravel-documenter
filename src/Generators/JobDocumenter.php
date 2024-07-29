@@ -5,18 +5,33 @@ namespace Elalecs\LaravelDocumenter\Generators;
 use Illuminate\Support\Facades\File;
 use ReflectionClass;
 use ReflectionMethod;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Bus\Queueable;
 
 /**
- * @description Clase para documentar trabajos (jobs) de Laravel.
+ * Class for documenting Laravel jobs.
+ * 
+ * @description This class provides functionality to generate documentation for Laravel jobs.
  */
 class JobDocumenter
 {
+    /**
+     * @var array The configuration array for the documenter.
+     */
     protected $config;
+
+    /**
+     * @var string The path to the stub file for jobs.
+     */
     protected $stubPath;
 
     /**
-     * @description Constructor de la clase JobDocumenter.
-     * @param array $config Configuración del documentador
+     * Constructor of the JobDocumenter class.
+     *
+     * @param array $config Documenter configuration
+     * @description Initializes a new instance of the JobDocumenter class with the given configuration.
      */
     public function __construct($config)
     {
@@ -25,8 +40,10 @@ class JobDocumenter
     }
 
     /**
-     * @description Genera la documentación para todos los trabajos.
-     * @return string Documentación generada
+     * Generates documentation for all jobs.
+     *
+     * @return string Generated documentation
+     * @description Iterates through all jobs and generates documentation for each one.
      */
     public function generate()
     {
@@ -41,8 +58,10 @@ class JobDocumenter
     }
 
     /**
-     * @description Obtiene la lista de trabajos del proyecto.
-     * @return array Lista de nombres de clase de trabajos
+     * Gets the list of jobs from the project.
+     *
+     * @return array List of job class names
+     * @description Retrieves all job classes from the configured job path.
      */
     protected function getJobs()
     {
@@ -58,9 +77,11 @@ class JobDocumenter
     }
 
     /**
-     * @description Documenta un trabajo individual.
-     * @param string $jobClass Nombre de la clase del trabajo
-     * @return string Documentación del trabajo
+     * Documents an individual job.
+     *
+     * @param string $jobClass Name of the job class
+     * @return string Job documentation
+     * @description Generates documentation for a single job class.
      */
     protected function documentJob($jobClass)
     {
@@ -77,15 +98,17 @@ class JobDocumenter
                 '{{implementedInterfaces}}' => $this->getImplementedInterfaces($reflection),
             ]);
         } catch (\ReflectionException $e) {
-            // Registrar el error o manejarlo según sea necesario
-            return sprintf("Error al documentar el trabajo %s: %s\n", $jobClass, $e->getMessage());
+            // Log the error or handle it as needed
+            return sprintf("Error documenting job %s: %s\n", $jobClass, $e->getMessage());
         }
     }
 
     /**
-     * @description Obtiene la cola de ejecución del trabajo.
-     * @param ReflectionClass $reflection Reflexión de la clase del trabajo
-     * @return string Cola de ejecución del trabajo
+     * Gets the execution queue of the job.
+     *
+     * @param ReflectionClass $reflection Reflection of the job class
+     * @return string Execution queue of the job
+     * @description Retrieves the queue property value of the job if it exists.
      */
     protected function getJobQueue(ReflectionClass $reflection)
     {
@@ -98,9 +121,11 @@ class JobDocumenter
     }
 
     /**
-     * @description Obtiene la descripción del trabajo desde su DocBlock.
-     * @param ReflectionClass $reflection Reflexión de la clase del trabajo
-     * @return string Descripción del trabajo
+     * Gets the job description from its DocBlock.
+     *
+     * @param ReflectionClass $reflection Reflection of the job class
+     * @return string Job description
+     * @description Extracts the description from the job class's DocBlock.
      */
     protected function getJobDescription(ReflectionClass $reflection)
     {
@@ -108,19 +133,21 @@ class JobDocumenter
         if (preg_match('/@description\s+(.+)/s', $docComment, $matches)) {
             return trim($matches[1]);
         }
-        return 'No se proporcionó descripción.';
+        return 'No description provided.';
     }
 
     /**
-     * @description Obtiene los parámetros del constructor del trabajo.
-     * @param ReflectionClass $reflection Reflexión de la clase del trabajo
-     * @return string Documentación de los parámetros del constructor
+     * Gets the constructor parameters of the job.
+     *
+     * @param ReflectionClass $reflection Reflection of the job class
+     * @return string Documentation of the constructor parameters
+     * @description Generates documentation for the job's constructor parameters.
      */
     protected function getConstructorParameters(ReflectionClass $reflection)
     {
         $constructor = $reflection->getConstructor();
         if (!$constructor) {
-            return 'No hay parámetros en el constructor.';
+            return 'No parameters in the constructor.';
         }
 
         $parameters = '';
@@ -139,30 +166,34 @@ class JobDocumenter
     }
 
     /**
-     * @description Obtiene información sobre el método handle del trabajo.
-     * @param ReflectionClass $reflection Reflexión de la clase del trabajo
-     * @return string Documentación del método handle
+     * Gets information about the job's handle method.
+     *
+     * @param ReflectionClass $reflection Reflection of the job class
+     * @return string Documentation of the handle method
+     * @description Generates documentation for the job's handle method.
      */
     protected function getHandleMethod(ReflectionClass $reflection)
     {
         $handleMethod = $reflection->getMethod('handle');
         $docComment = $handleMethod->getDocComment();
 
-        $description = 'No se proporcionó descripción.';
+        $description = 'No description provided.';
         if (preg_match('/@description\s+(.+)/s', $docComment, $matches)) {
             $description = trim($matches[1]);
         }
 
-        return sprintf("Descripción: %s\n\nParámetros:\n%s",
+        return sprintf("Description: %s\n\nParameters:\n%s",
             $description,
             $this->getMethodParameters($handleMethod)
         );
     }
 
     /**
-     * @description Obtiene los parámetros de un método.
-     * @param ReflectionMethod $method Método a obtener parámetros
-     * @return string Documentación de los parámetros
+     * Gets the parameters of a method.
+     *
+     * @param ReflectionMethod $method Method to get parameters from
+     * @return string Documentation of the parameters
+     * @description Generates documentation for a method's parameters.
      */
     protected function getMethodParameters(ReflectionMethod $method)
     {
@@ -178,18 +209,20 @@ class JobDocumenter
     }
 
     /**
-     * @description Obtiene información sobre las interfaces implementadas por el trabajo.
-     * @param ReflectionClass $reflection Reflexión de la clase del trabajo
-     * @return string Información sobre las interfaces implementadas
+     * Gets information about the interfaces implemented by the job.
+     *
+     * @param ReflectionClass $reflection Reflection of the job class
+     * @return string Information about implemented interfaces
+     * @description Retrieves and formats information about interfaces implemented by the job.
      */
     protected function getImplementedInterfaces(ReflectionClass $reflection)
     {
         $interfaces = $reflection->getInterfaceNames();
         if (empty($interfaces)) {
-            return "No implementa interfaces específicas.\n";
+            return "Does not implement specific interfaces.\n";
         }
 
-        $info = "Implementa las siguientes interfaces:\n";
+        $info = "Implements the following interfaces:\n";
         foreach ($interfaces as $interface) {
             $info .= "- " . $interface . "\n";
         }

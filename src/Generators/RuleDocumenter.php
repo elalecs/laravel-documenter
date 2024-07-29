@@ -1,7 +1,13 @@
 <?php
 
+namespace Elalecs\LaravelDocumenter\Generators;
+
+use Illuminate\Support\Facades\File;
+use ReflectionClass;
+use ReflectionMethod;
+
 /**
- * @description Clase para documentar reglas de validación personalizadas de Laravel.
+ * @description Class for documenting Laravel custom validation rules.
  */
 class RuleDocumenter
 {
@@ -9,8 +15,8 @@ class RuleDocumenter
     protected $stubPath;
 
     /**
-     * @description Constructor de la clase RuleDocumenter.
-     * @param array $config Configuración del documentador
+     * @description Constructor of the RuleDocumenter class.
+     * @param array $config Documenter configuration
      */
     public function __construct($config)
     {
@@ -19,8 +25,8 @@ class RuleDocumenter
     }
 
     /**
-     * @description Genera la documentación para todas las reglas de validación.
-     * @return string Documentación generada
+     * @description Generates documentation for all validation rules.
+     * @return string Generated documentation
      */
     public function generate()
     {
@@ -35,8 +41,8 @@ class RuleDocumenter
     }
 
     /**
-     * @description Obtiene la lista de reglas de validación del proyecto.
-     * @return array Lista de nombres de clase de reglas
+     * @description Gets the list of validation rules from the project.
+     * @return array List of rule class names
      */
     protected function getRules()
     {
@@ -52,9 +58,9 @@ class RuleDocumenter
     }
 
     /**
-     * @description Documenta una regla de validación individual.
-     * @param string $ruleClass Nombre de la clase de la regla
-     * @return string Documentación de la regla
+     * @description Documents an individual validation rule.
+     * @param string $ruleClass Name of the rule class
+     * @return string Documentation of the rule
      */
     protected function documentRule($ruleClass)
     {
@@ -70,15 +76,15 @@ class RuleDocumenter
                 '{{constructorParameters}}' => $this->getConstructorParameters($reflection),
             ]);
         } catch (\ReflectionException $e) {
-            // Registrar el error o manejarlo según sea necesario
-            return sprintf("Error al documentar la regla %s: %s\n", $ruleClass, $e->getMessage());
+            // Log the error or handle it as needed
+            return sprintf("Error documenting rule %s: %s\n", $ruleClass, $e->getMessage());
         }
     }
 
     /**
-     * @description Obtiene la descripción de la regla desde su DocBlock.
-     * @param ReflectionClass $reflection Reflexión de la clase de la regla
-     * @return string Descripción de la regla
+     * @description Gets the rule description from its DocBlock.
+     * @param ReflectionClass $reflection Reflection of the rule class
+     * @return string Description of the rule
      */
     protected function getRuleDescription(ReflectionClass $reflection)
     {
@@ -86,34 +92,34 @@ class RuleDocumenter
         if (preg_match('/@description\s+(.+)/s', $docComment, $matches)) {
             return trim($matches[1]);
         }
-        return 'No se proporcionó descripción.';
+        return 'No description provided.';
     }
 
     /**
-     * @description Obtiene información sobre el método passes de la regla.
-     * @param ReflectionClass $reflection Reflexión de la clase de la regla
-     * @return string Documentación del método passes
+     * @description Gets information about the rule's passes method.
+     * @param ReflectionClass $reflection Reflection of the rule class
+     * @return string Documentation of the passes method
      */
     protected function getPassesMethod(ReflectionClass $reflection)
     {
         $passesMethod = $reflection->getMethod('passes');
         $docComment = $passesMethod->getDocComment();
 
-        $description = 'No se proporcionó descripción.';
+        $description = 'No description provided.';
         if (preg_match('/@description\s+(.+)/s', $docComment, $matches)) {
             $description = trim($matches[1]);
         }
 
-        return sprintf("Descripción: %s\n\nParámetros:\n%s",
+        return sprintf("Description: %s\n\nParameters:\n%s",
             $description,
             $this->getMethodParameters($passesMethod)
         );
     }
 
     /**
-     * @description Obtiene el mensaje de error de la regla.
-     * @param ReflectionClass $reflection Reflexión de la clase de la regla
-     * @return string Mensaje de error de la regla
+     * @description Gets the rule's error message.
+     * @param ReflectionClass $reflection Reflection of the rule class
+     * @return string Error message of the rule
      */
     protected function getMessage(ReflectionClass $reflection)
     {
@@ -125,19 +131,19 @@ class RuleDocumenter
                 return trim($matches[1]);
             }
         }
-        return 'Mensaje de validación predeterminado de Laravel.';
+        return 'Default Laravel validation message.';
     }
 
     /**
-     * @description Obtiene los parámetros del constructor de la regla.
-     * @param ReflectionClass $reflection Reflexión de la clase de la regla
-     * @return string Documentación de los parámetros del constructor
+     * @description Gets the rule's constructor parameters.
+     * @param ReflectionClass $reflection Reflection of the rule class
+     * @return string Documentation of the constructor parameters
      */
     protected function getConstructorParameters(ReflectionClass $reflection)
     {
         $constructor = $reflection->getConstructor();
         if (!$constructor) {
-            return 'No hay parámetros en el constructor.';
+            return 'No parameters in the constructor.';
         }
 
         $parameters = '';
@@ -156,9 +162,9 @@ class RuleDocumenter
     }
 
     /**
-     * @description Obtiene los parámetros de un método.
-     * @param ReflectionMethod $method Método a analizar
-     * @return string Documentación de los parámetros del método
+     * @description Gets the parameters of a method.
+     * @param ReflectionMethod $method Method to analyze
+     * @return string Documentation of the method parameters
      */
     protected function getMethodParameters(ReflectionMethod $method)
     {
@@ -170,6 +176,6 @@ class RuleDocumenter
             }
             $parameters .= "\n";
         }
-        return $parameters ?: 'No parámetros.';
+        return $parameters ?: 'No parameters.';
     }
 }

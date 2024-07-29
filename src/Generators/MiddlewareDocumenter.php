@@ -1,22 +1,32 @@
 <?php
 
-/**
- * @description Clase para documentar middleware de Laravel.
- */
 namespace Elalecs\LaravelDocumenter\Generators;
 
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Str;
 use ReflectionClass;
 use ReflectionMethod;
+use Illuminate\Contracts\Http\Kernel;
+use Illuminate\Support\Facades\App;
 
+/**
+ * @description Class for documenting Laravel middleware.
+ */
 class MiddlewareDocumenter
 {
+    /**
+     * @var array The configuration array for the documenter.
+     */
     protected $config;
+
+    /**
+     * @var string The path to the stub file for middleware.
+     */
     protected $stubPath;
 
     /**
-     * @description Constructor de la clase MiddlewareDocumenter.
-     * @param array $config Configuración del documentador
+     * @description Constructor of the MiddlewareDocumenter class.
+     * @param array $config Documenter configuration
      */
     public function __construct($config)
     {
@@ -25,8 +35,8 @@ class MiddlewareDocumenter
     }
 
     /**
-     * @description Genera la documentación para todos los middleware.
-     * @return string Documentación generada
+     * @description Generates documentation for all middleware.
+     * @return string Generated documentation
      */
     public function generate()
     {
@@ -41,8 +51,8 @@ class MiddlewareDocumenter
     }
 
     /**
-     * @description Obtiene la lista de middleware del proyecto.
-     * @return array Lista de nombres de clase de middleware
+     * @description Gets the list of middleware from the project.
+     * @return array List of middleware class names
      */
     protected function getMiddlewares()
     {
@@ -58,9 +68,9 @@ class MiddlewareDocumenter
     }
 
     /**
-     * @description Documenta un middleware individual.
-     * @param string $middlewareClass Nombre de la clase del middleware
-     * @return string Documentación del middleware
+     * @description Documents an individual middleware.
+     * @param string $middlewareClass Name of the middleware class
+     * @return string Documentation of the middleware
      */
     protected function documentMiddleware($middlewareClass)
     {
@@ -75,15 +85,15 @@ class MiddlewareDocumenter
                 '{{registration}}' => $this->getMiddlewareRegistration($middlewareClass),
             ]);
         } catch (\ReflectionException $e) {
-            // Registrar el error o manejarlo según sea necesario
-            return sprintf("Error al documentar el middleware %s: %s\n", $middlewareClass, $e->getMessage());
+            // Log the error or handle it as needed
+            return sprintf("Error documenting middleware %s: %s\n", $middlewareClass, $e->getMessage());
         }
     }
 
     /**
-     * @description Obtiene la descripción del middleware desde su DocBlock.
-     * @param ReflectionClass $reflection Reflexión de la clase del middleware
-     * @return string Descripción del middleware
+     * @description Gets the middleware description from its DocBlock.
+     * @param ReflectionClass $reflection Reflection of the middleware class
+     * @return string Description of the middleware
      */
     protected function getMiddlewareDescription(ReflectionClass $reflection)
     {
@@ -91,34 +101,34 @@ class MiddlewareDocumenter
         if (preg_match('/@description\s+(.+)/s', $docComment, $matches)) {
             return trim($matches[1]);
         }
-        return 'No se proporcionó descripción.';
+        return 'No description provided.';
     }
 
     /**
-     * @description Obtiene información sobre el método handle del middleware.
-     * @param ReflectionClass $reflection Reflexión de la clase del middleware
-     * @return string Documentación del método handle
+     * @description Gets information about the middleware's handle method.
+     * @param ReflectionClass $reflection Reflection of the middleware class
+     * @return string Documentation of the handle method
      */
     protected function getHandleMethod(ReflectionClass $reflection)
     {
         $handleMethod = $reflection->getMethod('handle');
         $docComment = $handleMethod->getDocComment();
 
-        $description = 'No se proporcionó descripción.';
+        $description = 'No description provided.';
         if (preg_match('/@description\s+(.+)/s', $docComment, $matches)) {
             $description = trim($matches[1]);
         }
 
-        return sprintf("Descripción: %s\n\nParámetros:\n%s",
+        return sprintf("Description: %s\n\nParameters:\n%s",
             $description,
             $this->getMethodParameters($handleMethod)
         );
     }
 
     /**
-     * @description Obtiene los parámetros de un método.
-     * @param ReflectionMethod $method Método a analizar
-     * @return string Documentación de los parámetros del método
+     * @description Gets the parameters of a method.
+     * @param ReflectionMethod $method Method to analyze
+     * @return string Documentation of the method parameters
      */
     protected function getMethodParameters(ReflectionMethod $method)
     {
@@ -134,34 +144,34 @@ class MiddlewareDocumenter
             }
             $parameters .= "\n";
         }
-        return $parameters ?: 'No hay parámetros.';
+        return $parameters ?: 'No parameters.';
     }
 
     /**
-     * @description Obtiene información sobre el registro del middleware.
-     * @param string $middlewareClass Nombre de la clase del middleware
-     * @return string Información sobre el registro del middleware
+     * @description Gets information about the middleware registration.
+     * @param string $middlewareClass Name of the middleware class
+     * @return string Information about the middleware registration
      */
     protected function getMiddlewareRegistration($middlewareClass)
     {
-        $kernel = app()->make(\Illuminate\Contracts\Http\Kernel::class);
+        $kernel = App::make(Kernel::class);
         $middlewareGroups = $kernel->getMiddlewareGroups();
         $routeMiddleware = $kernel->getRouteMiddleware();
 
-        $info = "Registro del middleware:\n";
+        $info = "Middleware registration:\n";
 
         foreach ($middlewareGroups as $group => $middlewares) {
             if (in_array($middlewareClass, $middlewares)) {
-                $info .= "- Registrado en el grupo de middleware '$group'\n";
+                $info .= "- Registered in the '$group' middleware group\n";
             }
         }
 
         foreach ($routeMiddleware as $key => $middleware) {
             if ($middleware === $middlewareClass) {
-                $info .= "- Registrado como middleware de ruta con la clave '$key'\n";
+                $info .= "- Registered as route middleware with key '$key'\n";
             }
         }
 
-        return $info ?: "- No se encontró información de registro para este middleware.\n";
+        return $info ?: "- No registration information found for this middleware.\n";
     }
 }
