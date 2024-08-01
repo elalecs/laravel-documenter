@@ -3,109 +3,62 @@
 return [
     /*
     |--------------------------------------------------------------------------
-    | Output Path
+    | Documentation Output Path
     |--------------------------------------------------------------------------
     |
     | This value determines the path where the generated documentation
-    | will be saved. By default, it uses the storage path of your Laravel
-    | application.
+    | will be saved. By default, it will be saved in the root of your
+    | project as CONTRIBUTING.md.
     |
     */
-    'output_path' => storage_path('app/documentation'),
+    'output_path' => base_path('CONTRIBUTING.md'),
 
     /*
     |--------------------------------------------------------------------------
-    | Documented Components
+    | Stubs Path
     |--------------------------------------------------------------------------
     |
-    | This array lists the components that should be documented. You can
-    | comment out or remove any components you don't want to include in
-    | the documentation.
+    | This value determines the path where the package will look for the stub
+    | files used to generate the documentation. After publishing the assets,
+    | this path will point to the published stubs in your project.
     |
     */
-    'components' => [
-        'models' => true,
-        'controllers' => true,
-        'filament_resources' => true,
-        'jobs' => true,
-        'events' => true,
-        'middlewares' => true,
-        'rules' => true,
-    ],
+    'stubs_path' => resource_path('views/vendor/laravel-documenter'),
 
     /*
     |--------------------------------------------------------------------------
-    | Namespaces
+    | Documenters Configuration
     |--------------------------------------------------------------------------
     |
-    | These values determine the namespaces where the documenter should look
-    | for the different components. Adjust these if your project structure
-    | differs from the Laravel default.
+    | Here you can specify the configuration for each documenter.
     |
     */
-    'namespaces' => [
-        'models' => 'App\\Models',
-        'controllers' => 'App\\Http\\Controllers',
-        'filament_resources' => 'App\\Filament\\Resources',
-        'jobs' => 'App\\Jobs',
-        'events' => 'App\\Events',
-        'middlewares' => 'App\\Http\\Middleware',
-        'rules' => 'App\\Rules',
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Exclusions
-    |--------------------------------------------------------------------------
-    |
-    | You can exclude specific files or patterns from documentation here.
-    | This is useful for ignoring auto-generated files or specific components
-    | you don't want to include in the documentation.
-    |
-    */
-    'exclude' => [
-        // 'App\\Models\\TemporaryModel',
-        // 'App\\Http\\Controllers\\*Controller',
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Documentation Sections
-    |--------------------------------------------------------------------------
-    |
-    | Customize which sections should be included in the documentation for
-    | each component type. You can add or remove sections as needed.
-    |
-    */
-    'sections' => [
-        'models' => [
-            'properties' => true,
-            'relationships' => true,
-            'methods' => true,
-            'events' => true,
+    'documenters' => [
+        'general' => [
+            'path' => app_path(),
+            'exclude' => ['Models', 'Filament'],
         ],
-        'controllers' => [
-            'methods' => true,
-            'middleware' => true,
+        'model' => [
+            'path' => app_path('Models'),
         ],
-        'filament_resources' => [
-            'fields' => true,
-            'forms' => true,
-            'tables' => true,
-            'actions' => true,
+        'api' => [
+            'path' => base_path('routes'),
+            'files' => ['api.php'], // Only document routes in api.php
+        ],
+        'filament' => [
+            'path' => app_path('Filament'),
         ],
     ],
 
     /*
     |--------------------------------------------------------------------------
-    | Custom Documenters
+    | PHP-Parser Options
     |--------------------------------------------------------------------------
     |
-    | If you need to document custom components or override the default
-    | documentation behavior, you can register your custom documenter classes here.
+    | Here you can specify the options for PHP-Parser.
     |
     */
-    'custom_documenters' => [
-        // 'custom_component' => \Your\Custom\Documenter::class,
+    'php_parser_options' => [
+        'kind' => PhpParser\ParserFactory::PREFER_PHP7,
     ],
 ];

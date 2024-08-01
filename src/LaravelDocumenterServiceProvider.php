@@ -4,27 +4,18 @@ namespace Elalecs\LaravelDocumenter;
 
 use Illuminate\Support\ServiceProvider;
 use Elalecs\LaravelDocumenter\Commands\GenerateDocumentation;
+use Elalecs\LaravelDocumenter\Generators\GeneralDocumenter;
 use Elalecs\LaravelDocumenter\Generators\ModelDocumenter;
-use Elalecs\LaravelDocumenter\Generators\FilamentResourceDocumenter;
-use Elalecs\LaravelDocumenter\Generators\ApiControllerDocumenter;
-use Elalecs\LaravelDocumenter\Generators\JobDocumenter;
-use Elalecs\LaravelDocumenter\Generators\EventDocumenter;
-use Elalecs\LaravelDocumenter\Generators\MiddlewareDocumenter;
-use Elalecs\LaravelDocumenter\Generators\RuleDocumenter;
+use Elalecs\LaravelDocumenter\Generators\ApiDocumenter;
+use Elalecs\LaravelDocumenter\Generators\FilamentDocumenter;
 
 /**
- * Service Provider for the LaravelDocumenter package.
- * 
- * This Service Provider is responsible for registering and configuring the necessary components
- * for the LaravelDocumenter package to function.
+ * Service provider for Laravel Documenter package.
  */
 class LaravelDocumenterServiceProvider extends ServiceProvider
 {
     /**
-     * Boot method of the Service Provider.
-     * 
-     * Runs after all Service Providers have been registered.
-     * Here, the configuration files are published and the commands are registered.
+     * Bootstrap any application services.
      *
      * @return void
      */
@@ -35,6 +26,10 @@ class LaravelDocumenterServiceProvider extends ServiceProvider
                 __DIR__.'/../config/laravel-documenter.php' => config_path('laravel-documenter.php'),
             ], 'config');
 
+            $this->publishes([
+                __DIR__.'/Stubs' => resource_path('views/vendor/laravel-documenter'),
+            ], 'stubs');
+
             $this->commands([
                 GenerateDocumentation::class,
             ]);
@@ -42,10 +37,7 @@ class LaravelDocumenterServiceProvider extends ServiceProvider
     }
 
     /**
-     * Register method of the Service Provider.
-     * 
-     * Runs when the Service Provider is registered by Laravel.
-     * Here, the package configuration is merged and the documentation generators are registered.
+     * Register any application services.
      *
      * @return void
      */
@@ -55,37 +47,34 @@ class LaravelDocumenterServiceProvider extends ServiceProvider
             __DIR__.'/../config/laravel-documenter.php', 'laravel-documenter'
         );
 
-        $this->app->singleton('laravel-documenter', function () {
-            return new LaravelDocumenter;
+        $this->app->singleton('laravel-documenter', function ($app) {
+            return new LaravelDocumenter($app);
         });
 
-        $this->registerGenerators();
+        $this->registerDocumenters();
     }
 
     /**
-     * Registers the documentation generators.
-     * 
-     * Each generator is registered in the Laravel service container with a specific key.
-     * This allows easy access to them through the container.
+     * Register the documenters.
      *
      * @return void
      */
-    protected function registerGenerators()
+    protected function registerDocumenters()
     {
-        $generators = [
-            'model' => ModelDocumenter::class,
-            'filament-resource' => FilamentResourceDocumenter::class,
-            'api-controller' => ApiControllerDocumenter::class,
-            'job' => JobDocumenter::class,
-            'event' => EventDocumenter::class,
-            'middleware' => MiddlewareDocumenter::class,
-            'rule' => RuleDocumenter::class,
-        ];
+        $this->app->bind('documenter.general', function ($app) {
+            return new GeneralDocumenter($app['config']['laravel-documenter.documenters.general']);
+        });
 
-        foreach ($generators as $key => $class) {
-            $this->app->bind("documenter.$key", function ($app) use ($class) {
-                return new $class($app['config']);
-            });
-        }
+        $this->app->bind('documenter.model', function ($app) {
+            return new ModelDocumenter($app['config']['laravel-documenter.documenters.model']);
+        });
+
+        $this->app->bind('documenter.api', function ($app) {
+            return new ApiDocumenter($app['config']['laravel-documenter.documenters.api']);
+        });
+
+        $this->app->bind('documenter.filament', function ($app) {
+            return new FilamentDocumenter($app['config']['laravel-documenter.documenters.filament']);
+        });
     }
 }

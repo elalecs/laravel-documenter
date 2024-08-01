@@ -1,6 +1,6 @@
 # Contributing to Laravel Documenter
 
-Thank you for your interest in contributing to Laravel Documenter! This document provides an overview of the project's architecture and guidelines for extension and contribution.
+Thank you for your interest in contributing to Laravel Documenter. This document provides an overview of the project's architecture and guidelines for extension and contribution.
 
 ## Project Architecture
 
@@ -11,12 +11,12 @@ Laravel Documenter is structured as a Laravel package, designed to generate comp
 `LaravelDocumenterServiceProvider.php` is the entry point of the package. It:
 - Registers the package's config file
 - Binds the main `LaravelDocumenter` class to the service container
-- Registers individual documentation generators
+- Registers the documenters
 
 ### 2. Main Class
 
 `LaravelDocumenter.php` orchestrates the documentation generation process. It:
-- Coordinates between different generators
+- Coordinates between different documenters
 - Handles high-level logic for documentation generation
 
 ### 3. Command
@@ -25,40 +25,47 @@ Laravel Documenter is structured as a Laravel package, designed to generate comp
 - Provides a CLI interface for generating documentation
 - Handles user input for specifying components or custom output paths
 
-### 4. Generators
+### 4. Documenters
 
-Located in the `Generators/` directory, each generator is responsible for documenting a specific component type:
-- `ModelDocumenter.php`
-- `FilamentResourceDocumenter.php`
-- `ApiControllerDocumenter.php`
-- `JobDocumenter.php`
-- `EventDocumenter.php`
-- `MiddlewareDocumenter.php`
-- `RuleDocumenter.php`
+We have four main documenters:
 
-### 5. Configuration
+- `GeneralDocumenter.php`: Documents all classes within `app/`, excluding Models.
+- `ModelDocumenter.php`: Specifically documents models.
+- `ApiDocumenter.php`: Documents API endpoints.
+- `FilamentDocumenter.php`: Documents Filament resources and pages.
+
+### 5. Base Parser Class
+
+`BasePhpParserDocumenter.php` provides a base class for all documenters, offering common parsing functionality.
+
+### 6. Configuration
 
 `config/laravel-documenter.php` allows users to customize the behavior of the package.
 
-### 6. Directory Structure
+### 7. Stubs
 
-The Laravel Documenter package is organized into the following main directories:
+The package uses Blade stubs for generating documentation. These stubs are located in the `src/Stubs` directory. After publishing the assets, you can find and edit these stubs in your project's `resources/views/vendor/laravel-documenter` directory. The main stubs are:
 
-- `src/`: Contains the core source code of the package.
-  - `Commands/`: Holds the Artisan commands, including `GenerateDocumentation.php`.
-  - `Generators/`: Contains individual generator classes for each component type.
-  - `Stubs/`: Stores stub files used as templates for generating documentation.
-- `config/`: Contains the configuration file `laravel-documenter.php`.
-- `tests/`: Holds the PHPUnit test files for the package.
+- `contributing.blade.php`: The main template for the CONTRIBUTING.md file.
+- `general-documenter.blade.php`: Template for general class documentation.
+- `model-documenter.blade.php`: Template for model documentation.
+- `api-documenter.blade.php`: Template for API endpoint documentation.
+- `filament-documenter.blade.php`: Template for Filament resource documentation.
 
-Understanding this structure is crucial when contributing to or extending the package.
+To publish the stubs:
+
+```bash
+php artisan vendor:publish --provider="Elalecs\LaravelDocumenter\LaravelDocumenterServiceProvider" --tag="stubs"
+```
+
+This will copy the stubs to your project's `resources/views/vendor/laravel-documenter` directory, allowing you to customize them.
 
 ## DocBlocks
 
 DocBlocks are crucial for the proper functioning of Laravel Documenter. When contributing to this project or using it in your own projects, please ensure that your code includes comprehensive DocBlocks. Here are some guidelines:
 
 1. Every class should have a DocBlock with a `@description` tag explaining its purpose.
-2. Methods, especially key methods like `handle()` in Jobs and Middleware, or `passes()` in Rules, should have DocBlocks explaining their functionality.
+2. Methods should have DocBlocks explaining their functionality.
 3. Use `@param` tags to describe method parameters.
 4. Use `@return` tags to describe method return values.
 5. For properties, use DocBlocks to explain their purpose and expected values.
@@ -95,23 +102,34 @@ class PasswordStrengthRule implements Rule
 }
 ```
 
+## PHP-Parser Integration
+
+We use PHP-Parser for robust and flexible code analysis. Here's why:
+
+1. **Accuracy**: PHP-Parser provides a complete Abstract Syntax Tree (AST) of the PHP code, allowing for more accurate and detailed analysis compared to regex-based solutions.
+
+2. **Flexibility**: It can handle complex PHP structures and syntax, making our documentation more comprehensive.
+
+3. **Maintainability**: Using a standardized parsing library makes the code easier to maintain and extend.
+
+4. **Future-proofing**: PHP-Parser is regularly updated to support new PHP features, ensuring our tool can document even the most modern PHP code.
+
 ## Extending the Package
 
 To extend Laravel Documenter, you can:
 
-1. **Add a New Generator**: 
-   - Create a new class in the `Generators/` directory
-   - Implement the generation logic
-   - Register the new generator in `LaravelDocumenterServiceProvider.php`
+1. **Modify the Documenters**: 
+   - Update any of the documenter classes to change how specific components are documented
+   - Utilize PHP-Parser's NodeVisitor pattern for complex analysis
 
-2. **Modify Existing Generators**:
-   - Each generator can be extended or replaced to customize documentation output
-
-3. **Enhance the Main Class**:
+2. **Enhance the Main Class**:
    - Add new methods to `LaravelDocumenter.php` for additional functionality
 
-4. **Expand the Command**:
+3. **Expand the Command**:
    - Modify `GenerateDocumentation.php` to add new options or behaviors
+
+4. **Customize the Stubs**:
+   - Modify the Blade stubs in `resources/views/vendor/laravel-documenter` to change the output format of the documentation
 
 ## Development Workflow
 
@@ -128,6 +146,7 @@ To extend Laravel Documenter, you can:
 - Write clear, self-documenting code
 - Include comprehensive DocBlocks for all classes and methods
 - Write unit tests for new functionality
+- When working with PHP-Parser, follow their conventions for node traversal and manipulation
 
 ## Testing
 
@@ -145,6 +164,7 @@ When adding new features or making significant changes:
 1. Update the README.md file if necessary
 2. Add or update DocBlocks in the code
 3. If adding new configuration options, update the config file and its documentation
+4. If changing the documentation format, update the relevant Blade stubs
 
 ## Submitting Changes
 
