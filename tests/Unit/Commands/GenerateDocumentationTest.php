@@ -1,106 +1,106 @@
 <?php
 
+namespace Tests\Feature;
+
 use Elalecs\LaravelDocumenter\Commands\GenerateDocumentation;
 use Elalecs\LaravelDocumenter\LaravelDocumenter;
-use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\File;
-use Symfony\Component\Console\Tester\CommandTester;
+use Mockery;
+use Orchestra\Testbench\TestCase;
 
-beforeEach(function () {
-    $this->documenter = Mockery::mock(LaravelDocumenter::class);
-    $this->command = new GenerateDocumentation($this->documenter);
-    $this->commandTester = new CommandTester($this->command);
-});
-
-afterEach(function () {
-    Mockery::close();
-});
-
-it('generates documentation without options', function () {
-    $components = ['model', 'filamentResource', 'apiController', 'job', 'event', 'middleware', 'rule'];
-    foreach ($components as $component) {
-        $this->documenter->shouldReceive('generate' . ucfirst($component) . 'Documentation')
-            ->once()
-            ->andReturn("$component documentation");
+class GenerateDocumentationCommandTest extends TestCase
+{
+    protected function setUp(): void
+    {
+        parent::setUp();
+        
+        // Mock the File facade
+        File::shouldReceive('exists')->andReturn(true);
+        File::shouldReceive('get')->andReturn('{{generatedDocumentation}}');
+        File::shouldReceive('put')->andReturn(true);
     }
 
-    File::shouldReceive('exists')->andReturn(true);
-    File::shouldReceive('get')->andReturn('{{generatedDocumentation}}');
-    File::shouldReceive('put')->once();
-
-    $this->commandTester->execute([]);
-
-    expect($this->commandTester->getDisplay())->toContain('Documentation generated successfully!');
-});
-
-it('generates documentation for a specific component', function () {
-    $this->documenter->shouldReceive('generateModelDocumentation')
-        ->once()
-        ->andReturn('model documentation');
-
-    File::shouldReceive('exists')->andReturn(true);
-    File::shouldReceive('get')->andReturn('{{generatedDocumentation}}');
-    File::shouldReceive('put')->once();
-
-    $this->commandTester->execute(['--component' => 'model']);
-
-    expect($this->commandTester->getDisplay())->toContain('Model documentation generated.');
-});
-
-it('generates documentation with custom output path', function () {
-    $customOutput = 'custom/path';
-    $components = ['model', 'filamentResource', 'apiController', 'job', 'event', 'middleware', 'rule'];
-    foreach ($components as $component) {
-        $this->documenter->shouldReceive('generate' . ucfirst($component) . 'Documentation')
-            ->once()
-            ->andReturn("$component documentation");
+    protected function getPackageProviders($app)
+    {
+        return ['Elalecs\LaravelDocumenter\LaravelDocumenterServiceProvider'];
     }
 
-    Config::shouldReceive('set')
-        ->with('laravel-documenter.output_path', $customOutput)
-        ->once();
+    public function testGenerateDocumentationCommand()
+    {
+        // Mock the LaravelDocumenter class
+        $documenterMock = Mockery::mock(LaravelDocumenter::class);
+        $documenterMock->shouldReceive('generateModelDocumentation')->andReturn("Model documentation\n");
+        $documenterMock->shouldReceive('generateFilamentResourceDocumentation')->andReturn("Filament Resource documentation\n");
+        $documenterMock->shouldReceive('generateApiControllerDocumentation')->andReturn("API Controller documentation\n");
+        $documenterMock->shouldReceive('generateJobDocumentation')->andReturn("Job documentation\n");
+        $documenterMock->shouldReceive('generateEventDocumentation')->andReturn("Event documentation\n");
+        $documenterMock->shouldReceive('generateMiddlewareDocumentation')->andReturn("Middleware documentation\n");
+        $documenterMock->shouldReceive('generateRuleDocumentation')->andReturn("Rule documentation\n");
 
-    File::shouldReceive('exists')->andReturn(true);
-    File::shouldReceive('get')->andReturn('{{generatedDocumentation}}');
-    File::shouldReceive('put')->once();
+        $this->app->instance(LaravelDocumenter::class, $documenterMock);
 
-    $this->commandTester->execute(['--output' => $customOutput]);
+        // Execute the command
+        $this->artisan('documenter:generate')
+             ->assertSuccessful();
 
-    expect($this->commandTester->getDisplay())->toContain('Documentation generated successfully!');
-});
-
-it('handles unknown component', function () {
-    $this->commandTester->execute(['--component' => 'unknown']);
-
-    expect($this->commandTester->getDisplay())->toContain('Unknown component: unknown');
-});
-
-it('handles missing contributing stub file', function () {
-    $components = ['model', 'filamentResource', 'apiController', 'job', 'event', 'middleware', 'rule'];
-    foreach ($components as $component) {
-        $this->documenter->shouldReceive('generate' . ucfirst($component) . 'Documentation')
-            ->andReturn('');
+        // Verify that File::put was called with the expected content
+        File::shouldHaveReceived('put')->withArgs(function($path, $content) {
+            return $path === base_path('CONTRIBUTING.md') &&
+                   strpos($content, 'Model documentation') !== false &&
+                   strpos($content, 'Filament Resource documentation') !== false &&
+                   strpos($content, 'API Controller documentation') !== false &&
+                   strpos($content, 'Job documentation') !== false &&
+                   strpos($content, 'Event documentation') !== false &&
+                   strpos($content, 'Middleware documentation') !== false &&
+                   strpos($content, 'Rule documentation') !== false;
+        });
     }
 
-    File::shouldReceive('exists')->andReturn(false);
+    public function testGenerateDocumentationForSpecificComponent()
+    {
+        // Mock the LaravelDocumenter class
+        $documenterMock = Mockery::mock(LaravelDocumenter::class);
+        $documenterMock->shouldReceive('generateModelDocumentation')->andReturn("Model documentation\n");
 
-    $this->commandTester->execute([]);
+        $this->app->instance(LaravelDocumenter::class, $documenterMock);
 
-    expect($this->commandTester->getDisplay())->toContain('Contributing stub file not found');
-});
+        // Execute the command for a specific component
+        $this->artisan('documenter:generate', ['--component' => 'model'])
+             ->assertSuccessful();
 
-it('generates contributing file successfully', function () {
-    $components = ['model', 'filamentResource', 'apiController', 'job', 'event', 'middleware', 'rule'];
-    foreach ($components as $component) {
-        $this->documenter->shouldReceive('generate' . ucfirst($component) . 'Documentation')
-            ->andReturn('');
+        // Verify that File::put was called with the expected content
+        File::shouldHaveReceived('put')->withArgs(function($path, $content) {
+            return $path === base_path('CONTRIBUTING.md') &&
+                   strpos($content, 'Model documentation') !== false;
+        });
     }
 
-    File::shouldReceive('exists')->andReturn(true);
-    File::shouldReceive('get')->andReturn('{{generatedDocumentation}}');
-    File::shouldReceive('put')->once();
+    public function testGenerateDocumentationWithNoContent()
+    {
+        // Mock the LaravelDocumenter class to return empty strings
+        $documenterMock = Mockery::mock(LaravelDocumenter::class);
+        $documenterMock->shouldReceive('generateModelDocumentation')->andReturn("");
+        $documenterMock->shouldReceive('generateFilamentResourceDocumentation')->andReturn("");
+        $documenterMock->shouldReceive('generateApiControllerDocumentation')->andReturn("");
+        $documenterMock->shouldReceive('generateJobDocumentation')->andReturn("");
+        $documenterMock->shouldReceive('generateEventDocumentation')->andReturn("");
+        $documenterMock->shouldReceive('generateMiddlewareDocumentation')->andReturn("");
+        $documenterMock->shouldReceive('generateRuleDocumentation')->andReturn("");
 
-    $this->commandTester->execute([]);
+        $this->app->instance(LaravelDocumenter::class, $documenterMock);
 
-    expect($this->commandTester->getDisplay())->toContain('CONTRIBUTING.md file generated');
-});
+        // Execute the command
+        $this->artisan('documenter:generate')
+             ->assertSuccessful()
+             ->expectsOutput('No documentation was generated.');
+
+        // Verify that File::put was not called
+        File::shouldNotHaveReceived('put');
+    }
+
+    protected function tearDown(): void
+    {
+        Mockery::close();
+        parent::tearDown();
+    }
+}

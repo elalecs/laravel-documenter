@@ -3,37 +3,73 @@
 namespace Elalecs\LaravelDocumenter\Generators;
 
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Str;
+use PhpParser\Node;
+use PhpParser\NodeFinder;
 
-/**
- * @description Class for documenting Laravel models.
- */
-class ModelDocumenter
+class ModelDocumenter extends BasePhpParserDocumenter
 {
-    /**
-     * @var array The configuration array for the documenter.
-     */
     protected $config;
-
-    /**
-     * @var string The path to the stub file for models.
-     */
     protected $stubPath;
+    protected $className;
+    protected $tableName;
+    protected $fillable = [];
+    protected $relationships = [];
 
-    /**
-     * @description Constructor of the ModelDocumenter class.
-     * @param array $config Documenter configuration
-     */
     public function __construct($config)
     {
+        parent::__construct();
         $this->config = $config;
         $this->stubPath = __DIR__ . '/../Stubs/model.stub';
     }
 
-    /**
-     * @description Generates documentation for all models.
-     * @return string Generated documentation
-     */
+    protected function extractModelInfo($ast)
+    {
+        $nodeFinder = new NodeFinder;
+        
+        $classNode = $nodeFinder->findFirst($ast, function(Node $node) {
+            return $node instanceof Node\Stmt\Class_;
+        });
+
+        if ($classNode) {
+            $this->className = $classNode->name->toString();
+
+            foreach ($classNode->stmts as $stmt) {
+                if ($stmt instanceof Node\Stmt\Property) {
+                    $this->extractProperty($stmt);
+                } elseif ($stmt instanceof Node\Stmt\ClassMethod) {
+                    $this->extractRelationship($stmt);
+                }
+            }
+        }
+    }
+
+    protected function extractProperty(Node\Stmt\Property $property)
+    {
+        $propertyName = $property->props[0]->name->toString();
+        
+        if ($propertyName === 'table' && isset($property->props[0]->default)) {
+            $this->tableName = $property->props[0]->default->value;
+        } elseif ($propertyName === 'fillable' && isset($property->props[0]->default)) {
+            $this->fillable = array_map(function($item) {
+                return $item->value;
+            }, $property->props[0]->default->items);
+        }
+    }
+
+    protected function extractRelationship(Node\Stmt\ClassMethod $method)
+    {
+        $relationshipMethods = ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany', 'morphTo', 'morphMany', 'morphToMany'];
+        
+        $nodeFinder = new NodeFinder;
+        $relationshipNode = $nodeFinder->findFirst($method, function(Node $node) use ($relationshipMethods) {
+            return $node instanceof Node\Expr\MethodCall && in_array($node->name->toString(), $relationshipMethods);
+        });
+
+        if ($relationshipNode) {
+            $this->relationships[] = $method->name->toString();
+        }
+    }
+
     public function generate()
     {
         $models = $this->getModels();
@@ -46,10 +82,6 @@ class ModelDocumenter
         return $documentation;
     }
 
-    /**
-     * @description Gets the list of models from the project.
-     * @return array List of model class names
-     */
     protected function getModels()
     {
         $modelPath = $this->config['model_path'] ?? app_path('Models');
@@ -57,116 +89,115 @@ class ModelDocumenter
 
         return collect($files)->map(function ($file) use ($modelPath) {
             $relativePath = $file->getRelativePath();
-            $namespace = str_replace('/', '\\', $relativePath);
+            $namespace = $relativePath ? str_replace('/', '\\', $relativePath) . '\\' : '';
             $className = $file->getBasename('.php');
-            return "App\\Models\\{$namespace}\\{$className}";
+            return "App\\Models\\{$namespace}{$className}";
         })->all();
     }
 
-    /**
-     * @description Documents an individual model.
-     * @param string $modelClass Name of the model class
-     * @return string Documentation of the model
-     */
     protected function documentModel($modelClass)
     {
-        try {
-            $reflection = new \ReflectionClass($modelClass);
-            $stub = File::get($this->stubPath);
+        $filePath = $this->getFilePath($modelClass);
+        $ast = $this->parseFile($filePath);
 
-            return strtr($stub, [
-                '{{modelName}}' => $reflection->getShortName(),
-                '{{description}}' => $this->getModelDescription($reflection),
-                '{{tableName}}' => $this->getTableName($modelClass),
-                '{{fillable}}' => $this->getFillable($modelClass),
-                '{{relationships}}' => $this->getRelationships($reflection),
-                '{{scopes}}' => $this->getScopes($reflection),
-                '{{attributes}}' => $this->getAttributes($modelClass),
-            ]);
-        } catch (\ReflectionException $e) {
-            // Log the error or handle it as needed
-            return sprintf("Error documenting model %s: %s\n", $modelClass, $e->getMessage());
-        }
+        $this->extractModelInfo($ast);
+
+        $stub = File::get($this->stubPath);
+
+        return strtr($stub, [
+            '{{modelName}}' => $this->className,
+            '{{description}}' => $this->getModelDescription($ast),
+            '{{tableName}}' => $this->tableName,
+            '{{fillable}}' => implode(', ', array_map(function ($item) {
+                return $item instanceof \PhpParser\Node\Scalar\String_ ? $item->value : (string) $item;
+            }, $this->fillable)),
+            '{{relationships}}' => implode(', ', array_map(function ($item) {
+                return $item instanceof \PhpParser\Node\Scalar\String_ ? $item->value : (string) $item;
+            }, $this->relationships)),
+            '{{casts}}' => $this->getCasts($ast),
+            '{{scopes}}' => $this->getScopes($ast),
+            '{{attributes}}' => $this->getAttributes($ast),
+        ]);
     }
 
-    /**
-     * @description Gets the model description from its DocBlock.
-     * @param \ReflectionClass $reflection Reflection of the model class
-     * @return string Description of the model
-     */
-    protected function getModelDescription(\ReflectionClass $reflection)
+    protected function getFilePath($modelClass)
     {
-        $docComment = $reflection->getDocComment();
-        if (preg_match('/@description\s+(.+)/s', $docComment, $matches)) {
-            return trim($matches[1]);
+        $reflectionClass = new \ReflectionClass($modelClass);
+        return $reflectionClass->getFileName();
+    }
+
+    protected function getModelDescription($ast)
+    {
+        $finder = new NodeFinder;
+        $classNode = $finder->findFirst($ast, function(Node $node) {
+            return $node instanceof Node\Stmt\Class_;
+        });
+
+        if ($classNode && $classNode->getDocComment()) {
+            $docComment = $classNode->getDocComment()->getText();
+            if (preg_match('/@description\s+(.+)/s', $docComment, $matches)) {
+                return trim($matches[1]);
+            }
         }
+
         return 'No description provided.';
     }
 
-    /**
-     * @description Gets the table associated with the model.
-     * @param string $modelClass Name of the model class
-     * @return string Name of the table
-     */
-    protected function getTableName($modelClass)
+    protected function getScopes($ast)
     {
-        return (new $modelClass)->getTable();
+        $scopes = [];
+        $finder = new NodeFinder;
+        $methodNodes = $finder->find($ast, function(Node $node) {
+            return $node instanceof Node\Stmt\ClassMethod && strpos($node->name->name, 'scope') === 0;
+        });
+
+        foreach ($methodNodes as $methodNode) {
+            $scopeName = lcfirst(substr($methodNode->name->name, 5));
+            $scopes[] = $scopeName;
+        }
+
+        return implode(', ', $scopes);
     }
 
-    /**
-     * @description Gets the fillable attributes of the model.
-     * @param string $modelClass Name of the model class
-     * @return string List of fillable attributes
-     */
-    protected function getFillable($modelClass)
+    protected function getAttributes($ast)
     {
-        $fillable = (new $modelClass)->getFillable();
-        return implode(', ', $fillable) ?: 'No fillable attributes defined.';
-    }
+        $attributes = [];
+        $finder = new NodeFinder;
+        $propertyNodes = $finder->find($ast, function(Node $node) {
+            return $node instanceof Node\Stmt\Property;
+        });
 
-    /**
-     * @description Gets the relationships of the model.
-     * @param \ReflectionClass $reflection Reflection of the model class
-     * @return string List of relationships
-     */
-    protected function getRelationships(\ReflectionClass $reflection)
-    {
-        $relationships = [];
-        foreach ($reflection->getMethods() as $method) {
-            if ($this->isRelationshipMethod($method)) {
-                $relationships[] = $method->getName();
+        foreach ($propertyNodes as $propertyNode) {
+            if ($propertyNode->isPublic()) {
+                foreach ($propertyNode->props as $prop) {
+                    $attributes[] = $prop->name->name;
+                }
             }
         }
-        return implode(', ', $relationships);
+
+        return implode(', ', $attributes);
     }
 
-    /**
-     * @description Determines if a method is a relationship method.
-     * @param \ReflectionMethod $method The method to check
-     * @return bool True if the method is a relationship method, false otherwise
-     */
-    protected function isRelationshipMethod(\ReflectionMethod $method)
+    protected function getCasts($ast)
     {
-        $relationshipMethods = ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany', 'morphTo', 'morphMany', 'morphToMany'];
-        $methodBody = $this->getMethodBody($method);
-        return Str::contains($methodBody, $relationshipMethods);
-    }
+        $casts = [];
+        $finder = new NodeFinder;
+        $propertyNode = $finder->findFirst($ast, function(Node $node) {
+            return $node instanceof Node\Stmt\Property && $node->props[0]->name->name === 'casts';
+        });
 
-    /**
-     * @description Gets the body of a method.
-     * @param \ReflectionMethod $method The method to get the body from
-     * @return string The body of the method
-     */
-    protected function getMethodBody(\ReflectionMethod $method)
-    {
-        $filename = $method->getFileName();
-        $start_line = $method->getStartLine() - 1;
-        $end_line = $method->getEndLine();
-        $length = $end_line - $start_line;
+        if ($propertyNode && $propertyNode->props[0]->default instanceof Node\Expr\Array_) {
+            foreach ($propertyNode->props[0]->default->items as $item) {
+                if ($item instanceof Node\Expr\ArrayItem) {
+                    $key = $item->key instanceof Node\Scalar\String_ ? $item->key->value : null;
+                    $value = $item->value instanceof Node\Scalar\String_ ? $item->value->value : null;
+                    if ($key && $value) {
+                        $casts[] = "$key: $value";
+                    }
+                }
+            }
+        }
 
-        $source = file($filename);
-        $body = implode("", array_slice($source, $start_line, $length));
-
-        return $body;
+        return implode(', ', $casts);
     }
 }

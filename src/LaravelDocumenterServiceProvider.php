@@ -13,15 +13,18 @@ use Elalecs\LaravelDocumenter\Generators\MiddlewareDocumenter;
 use Elalecs\LaravelDocumenter\Generators\RuleDocumenter;
 
 /**
- * Laravel Documenter Service Provider
- *
- * This service provider bootstraps the Laravel Documenter package,
- * registering its config, commands, and services.
+ * Service Provider for the LaravelDocumenter package.
+ * 
+ * This Service Provider is responsible for registering and configuring the necessary components
+ * for the LaravelDocumenter package to function.
  */
 class LaravelDocumenterServiceProvider extends ServiceProvider
 {
     /**
-     * Bootstrap the application services.
+     * Boot method of the Service Provider.
+     * 
+     * Runs after all Service Providers have been registered.
+     * Here, the configuration files are published and the commands are registered.
      *
      * @return void
      */
@@ -29,7 +32,7 @@ class LaravelDocumenterServiceProvider extends ServiceProvider
     {
         if ($this->app->runningInConsole()) {
             $this->publishes([
-                __DIR__.'/../config/filament-documenter.php' => config_path('filament-documenter.php'),
+                __DIR__.'/../config/laravel-documenter.php' => config_path('laravel-documenter.php'),
             ], 'config');
 
             $this->commands([
@@ -39,31 +42,31 @@ class LaravelDocumenterServiceProvider extends ServiceProvider
     }
 
     /**
-     * Register the application services.
+     * Register method of the Service Provider.
+     * 
+     * Runs when the Service Provider is registered by Laravel.
+     * Here, the package configuration is merged and the documentation generators are registered.
      *
      * @return void
      */
     public function register()
     {
-        // Merge the package configuration file
         $this->mergeConfigFrom(
             __DIR__.'/../config/laravel-documenter.php', 'laravel-documenter'
         );
 
-        // Register the main class to use with the facade
         $this->app->singleton('laravel-documenter', function () {
             return new LaravelDocumenter;
         });
 
-        // Register generators
         $this->registerGenerators();
     }
 
     /**
-     * Register all the document generators.
-     *
-     * This method binds each generator class to the service container
-     * with a unique key for easy retrieval.
+     * Registers the documentation generators.
+     * 
+     * Each generator is registered in the Laravel service container with a specific key.
+     * This allows easy access to them through the container.
      *
      * @return void
      */

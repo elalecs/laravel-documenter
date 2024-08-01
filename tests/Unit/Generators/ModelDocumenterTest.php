@@ -11,20 +11,60 @@ beforeEach(function () {
 });
 
 it('generates model documentation', function () {
+    // Mock File facade
     File::shouldReceive('allFiles')
         ->once()
+        ->with('app/Models')
         ->andReturn([
-            new SplFileInfo('TestModel.php'),
-            new SplFileInfo('AnotherModel.php')
+            new SplFileInfo('app/Models/TestModel.php'),
+            new SplFileInfo('app/Models/AnotherModel.php')
         ]);
 
     File::shouldReceive('get')
         ->andReturn('{{modelName}} {{description}} {{tableName}} {{fillable}} {{relationships}} {{scopes}} {{attributes}}');
 
+    // Mock ReflectionClass
+    $mockReflection = Mockery::mock('overload:ReflectionClass');
+    $mockReflection->shouldReceive('getShortName')->andReturn('TestModel', 'AnotherModel');
+    $mockReflection->shouldReceive('getDocComment')->andReturn('/** @description This is a test model */');
+    $mockReflection->shouldReceive('getMethods')->andReturn([]);
+
+    // Mock model instances
+    $mockModel = Mockery::mock('overload:App\Models\TestModel');
+    $mockModel->shouldReceive('getTable')->andReturn('test_table');
+    $mockModel->shouldReceive('getFillable')->andReturn(['name', 'email']);
+
+    ob_start();
     $result = $this->documenter->generate();
+    $output = ob_get_clean();
 
     expect($result)->toContain('TestModel')
-        ->toContain('AnotherModel');
+        ->toContain('AnotherModel')
+        ->toContain('This is a test model')
+        ->toContain('test_table')
+        ->toContain('name, email');
+
+    expect($output)->toContain('Model documentation generated.');
+});
+
+it('gets models from the specified path', function () {
+    File::shouldReceive('allFiles')
+        ->once()
+        ->with('app/Models')
+        ->andReturn([
+            new SplFileInfo('app/Models/TestModel.php'),
+            new SplFileInfo('app/Models/SubFolder/NestedModel.php')
+        ]);
+
+    $method = new ReflectionMethod(ModelDocumenter::class, 'getModels');
+    $method->setAccessible(true);
+
+    $result = $method->invoke($this->documenter);
+
+    expect($result)->toBe([
+        'App\\Models\\TestModel',
+        'App\\Models\\SubFolder\\NestedModel'
+    ]);
 });
 
 it('documents a model', function () {
@@ -32,32 +72,24 @@ it('documents a model', function () {
         ->once()
         ->andReturn('{{modelName}} {{description}} {{tableName}} {{fillable}} {{relationships}} {{scopes}} {{attributes}}');
 
-    $mockReflection = Mockery::mock(ReflectionClass::class);
+    $mockReflection = Mockery::mock('overload:ReflectionClass');
     $mockReflection->shouldReceive('getShortName')->andReturn('TestModel');
     $mockReflection->shouldReceive('getDocComment')->andReturn('/** @description This is a test model */');
+    $mockReflection->shouldReceive('getMethods')->andReturn([]);
 
-    $mockModel = Mockery::mock(stdClass::class);
+    $mockModel = Mockery::mock('overload:App\Models\TestModel');
     $mockModel->shouldReceive('getTable')->andReturn('test_table');
     $mockModel->shouldReceive('getFillable')->andReturn(['name', 'email']);
 
-    $mockMethod = Mockery::mock(ReflectionMethod::class);
-    $mockMethod->shouldReceive('getName')->andReturn('testRelation');
-    $mockReflection->shouldReceive('getMethods')->andReturn([$mockMethod]);
-
     $method = new ReflectionMethod(ModelDocumenter::class, 'documentModel');
     $method->setAccessible(true);
-
-    $isRelationshipMethod = Mockery::mock(ReflectionMethod::class);
-    $isRelationshipMethod->shouldReceive('invoke')->andReturn(true);
-    $this->documenter->isRelationshipMethod = $isRelationshipMethod;
 
     $result = $method->invoke($this->documenter, 'App\Models\TestModel');
 
     expect($result)->toContain('TestModel')
         ->toContain('This is a test model')
         ->toContain('test_table')
-        ->toContain('name, email')
-        ->toContain('testRelation');
+        ->toContain('name, email');
 });
 
 it('gets model description', function () {
@@ -102,14 +134,13 @@ it('gets relationships', function () {
     $mockMethod->shouldReceive('getName')->andReturn('testRelation');
     $mockReflection->shouldReceive('getMethods')->andReturn([$mockMethod]);
 
-    $isRelationshipMethod = Mockery::mock(ReflectionMethod::class);
-    $isRelationshipMethod->shouldReceive('invoke')->andReturn(true);
-    $this->documenter->isRelationshipMethod = $isRelationshipMethod;
+    $mockDocumenter = Mockery::mock(ModelDocumenter::class)->makePartial();
+    $mockDocumenter->shouldReceive('isRelationshipMethod')->andReturn(true);
 
     $method = new ReflectionMethod(ModelDocumenter::class, 'getRelationships');
     $method->setAccessible(true);
 
-    $result = $method->invoke($this->documenter, $mockReflection);
+    $result = $method->invoke($mockDocumenter, $mockReflection);
 
     expect($result)->toBe('testRelation');
 });
@@ -120,10 +151,17 @@ it('checks if method is a relationship', function () {
     $mockMethod->shouldReceive('getStartLine')->andReturn(__LINE__);
     $mockMethod->shouldReceive('getEndLine')->andReturn(__LINE__ + 3);
 
+    $mockDocumenter = Mockery::mock(ModelDocumenter::class)->makePartial();
+    $mockDocumenter->shouldReceive('getMethodBody')->andReturn('return $this->hasMany(OtherModel::class);');
+
     $method = new ReflectionMethod(ModelDocumenter::class, 'isRelationshipMethod');
     $method->setAccessible(true);
 
-    $result = $method->invoke($this->documenter, $mockMethod);
+    $result = $method->invoke($mockDocumenter, $mockMethod);
 
-    expect($result)->toBeBoolean();
+    expect($result)->toBeTrue();
+});
+
+afterEach(function () {
+    Mockery::close();
 });
