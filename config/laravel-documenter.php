@@ -23,7 +23,7 @@ return [
     | this path will point to the published stubs in your project.
     |
     */
-    'stubs_path' => resource_path('views/vendor/laravel-documenter'),
+    'stubs_path' => __DIR__.'/../vendor/elalecs/laravel-documenter/src/Stubs',
 
     /*
     |--------------------------------------------------------------------------
@@ -59,6 +59,6 @@ return [
     |
     */
     'php_parser_options' => [
-        'kind' => PhpParser\ParserFactory::PREFER_PHP7,
+        'kind' => PhpParser\PhpVersion::fromString('8.0'),
     ],
 ];

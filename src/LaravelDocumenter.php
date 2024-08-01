@@ -63,7 +63,7 @@ class LaravelDocumenter
      *
      * @return string
      */
-    protected function generateGeneralDocumentation()
+    public function generateGeneralDocumentation()
     {
         return $this->app->make('documenter.general')->generate();
     }
@@ -73,7 +73,7 @@ class LaravelDocumenter
      *
      * @return string
      */
-    protected function generateModelDocumentation()
+    public function generateModelDocumentation()
     {
         return $this->app->make('documenter.model')->generate();
     }
@@ -83,7 +83,7 @@ class LaravelDocumenter
      *
      * @return string
      */
-    protected function generateApiDocumentation()
+    public function generateApiDocumentation()
     {
         return $this->app->make('documenter.api')->generate();
     }
@@ -93,7 +93,7 @@ class LaravelDocumenter
      *
      * @return string
      */
-    protected function generateFilamentDocumentation()
+    public function generateFilamentDocumentation()
     {
         return $this->app->make('documenter.filament')->generate();
     }

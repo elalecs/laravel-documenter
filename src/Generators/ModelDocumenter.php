@@ -3,6 +3,7 @@
 namespace Elalecs\LaravelDocumenter\Generators;
 
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\View;
 use PhpParser\Node;
 use PhpParser\NodeFinder;
 
@@ -11,15 +12,91 @@ class ModelDocumenter extends BasePhpParserDocumenter
     protected $config;
     protected $stubPath;
     protected $className;
+    protected $namespace;
     protected $tableName;
     protected $fillable = [];
     protected $relationships = [];
+    protected $scopes = [];
+    protected $casts = [];
 
     public function __construct($config)
     {
         parent::__construct();
         $this->config = $config;
-        $this->stubPath = __DIR__ . '/../Stubs/model.stub';
+        $this->setStubPath();
+    }
+
+    protected function setStubPath()
+    {
+        $stubsPath = $this->config['stubs_path'] ?? __DIR__.'/../Stubs';
+        $this->stubPath = $stubsPath . "/model-documenter.blade.php";
+        
+        if (!File::exists($this->stubPath)) {
+            throw new \RuntimeException("Model documenter stub not found at {$this->stubPath}");
+        }
+    }
+
+    public function generate()
+    {
+        $models = $this->getModels();
+        $documentation = '';
+
+        foreach ($models as $modelFile) {
+            $documentation .= $this->documentModel($modelFile);
+        }
+
+        return $documentation;
+    }
+
+    protected function getModels()
+    {
+        $modelPath = $this->config['model_path'] ?? app_path('Models');
+        return File::allFiles($modelPath);
+    }
+
+    protected function documentModel($modelFile)
+    {
+        $ast = $this->parseFile($modelFile->getPathname());
+
+        $this->extractModelInfo($ast);
+
+        return View::file($this->stubPath, [
+            'modelName' => $this->className,
+            'namespace' => $this->namespace,
+            'description' => $this->getModelDescription($ast),
+            'tableName' => $this->tableName,
+            'fillable' => $this->convertToStringArray($this->fillable),
+            'relationships' => $this->relationships,
+            'scopes' => $this->convertScopesToArray(),
+            'casts' => $this->convertCastsToArray(),
+        ])->render();
+    }
+
+    protected function convertToStringArray($array)
+    {
+        return array_map(function ($item) {
+            return $item instanceof Node\Scalar\String_ ? $item->value : (string)$item;
+        }, $array);
+    }
+
+    protected function convertScopesToArray()
+    {
+        return array_map(function ($scope) {
+            return [
+                'name' => $scope['name'],
+                'description' => $scope['description']
+            ];
+        }, $this->scopes);
+    }
+
+    protected function convertCastsToArray()
+    {
+        return array_map(function ($value, $key) {
+            return [
+                'attribute' => $key instanceof Node\Scalar\String_ ? $key->value : (string)$key,
+                'type' => $value instanceof Node\Scalar\String_ ? $value->value : (string)$value
+            ];
+        }, $this->casts, array_keys($this->casts));
     }
 
     protected function extractModelInfo($ast)
@@ -32,14 +109,28 @@ class ModelDocumenter extends BasePhpParserDocumenter
 
         if ($classNode) {
             $this->className = $classNode->name->toString();
+            $this->extractNamespace($ast);
 
             foreach ($classNode->stmts as $stmt) {
                 if ($stmt instanceof Node\Stmt\Property) {
                     $this->extractProperty($stmt);
                 } elseif ($stmt instanceof Node\Stmt\ClassMethod) {
                     $this->extractRelationship($stmt);
+                    $this->extractScope($stmt);
                 }
             }
+        }
+    }
+
+    protected function extractNamespace($ast)
+    {
+        $nodeFinder = new NodeFinder;
+        $namespaceNode = $nodeFinder->findFirst($ast, function(Node $node) {
+            return $node instanceof Node\Stmt\Namespace_;
+        });
+
+        if ($namespaceNode) {
+            $this->namespace = $namespaceNode->name->toString();
         }
     }
 
@@ -53,6 +144,8 @@ class ModelDocumenter extends BasePhpParserDocumenter
             $this->fillable = array_map(function($item) {
                 return $item->value;
             }, $property->props[0]->default->items);
+        } elseif ($propertyName === 'casts' && isset($property->props[0]->default)) {
+            $this->casts = $this->extractCasts($property->props[0]->default);
         }
     }
 
@@ -66,64 +159,51 @@ class ModelDocumenter extends BasePhpParserDocumenter
         });
 
         if ($relationshipNode) {
-            $this->relationships[] = $method->name->toString();
+            $this->relationships[] = (object)[
+                'name' => $method->name->toString(),
+                'type' => $relationshipNode->name->toString(),
+                'relatedModel' => $this->getRelatedModel($relationshipNode->args[0]->value)
+            ];
         }
     }
 
-    public function generate()
+    protected function getRelatedModel($node)
     {
-        $models = $this->getModels();
-        $documentation = '';
-
-        foreach ($models as $model) {
-            $documentation .= $this->documentModel($model);
+        if ($node instanceof Node\Expr\ClassConstFetch) {
+            return $node->class->toString() . '::class';
+        } elseif ($node instanceof Node\Scalar\String_) {
+            return $node->value;
+        } else {
+            return 'Unknown';
         }
-
-        return $documentation;
     }
 
-    protected function getModels()
+    protected function extractScope(Node\Stmt\ClassMethod $method)
     {
-        $modelPath = $this->config['model_path'] ?? app_path('Models');
-        $files = File::allFiles($modelPath);
-
-        return collect($files)->map(function ($file) use ($modelPath) {
-            $relativePath = $file->getRelativePath();
-            $namespace = $relativePath ? str_replace('/', '\\', $relativePath) . '\\' : '';
-            $className = $file->getBasename('.php');
-            return "App\\Models\\{$namespace}{$className}";
-        })->all();
+        if (strpos($method->name->toString(), 'scope') === 0) {
+            $scopeName = lcfirst(substr($method->name->toString(), 5));
+            $this->scopes[] = [
+                'name' => $scopeName,
+                'description' => $this->getDocComment($method)
+            ];
+        }
     }
 
-    protected function documentModel($modelClass)
+    protected function extractCasts($node)
     {
-        $filePath = $this->getFilePath($modelClass);
-        $ast = $this->parseFile($filePath);
-
-        $this->extractModelInfo($ast);
-
-        $stub = File::get($this->stubPath);
-
-        return strtr($stub, [
-            '{{modelName}}' => $this->className,
-            '{{description}}' => $this->getModelDescription($ast),
-            '{{tableName}}' => $this->tableName,
-            '{{fillable}}' => implode(', ', array_map(function ($item) {
-                return $item instanceof \PhpParser\Node\Scalar\String_ ? $item->value : (string) $item;
-            }, $this->fillable)),
-            '{{relationships}}' => implode(', ', array_map(function ($item) {
-                return $item instanceof \PhpParser\Node\Scalar\String_ ? $item->value : (string) $item;
-            }, $this->relationships)),
-            '{{casts}}' => $this->getCasts($ast),
-            '{{scopes}}' => $this->getScopes($ast),
-            '{{attributes}}' => $this->getAttributes($ast),
-        ]);
-    }
-
-    protected function getFilePath($modelClass)
-    {
-        $reflectionClass = new \ReflectionClass($modelClass);
-        return $reflectionClass->getFileName();
+        $casts = [];
+        if ($node instanceof Node\Expr\Array_) {
+            foreach ($node->items as $item) {
+                if ($item instanceof Node\Expr\ArrayItem) {
+                    $key = $item->key instanceof Node\Scalar\String_ ? $item->key->value : null;
+                    $value = $item->value instanceof Node\Scalar\String_ ? $item->value->value : null;
+                    if ($key && $value) {
+                        $casts[$key] = $value;
+                    }
+                }
+            }
+        }
+        return $casts;
     }
 
     protected function getModelDescription($ast)
@@ -143,61 +223,14 @@ class ModelDocumenter extends BasePhpParserDocumenter
         return 'No description provided.';
     }
 
-    protected function getScopes($ast)
+    protected function getDocComment(Node $node)
     {
-        $scopes = [];
-        $finder = new NodeFinder;
-        $methodNodes = $finder->find($ast, function(Node $node) {
-            return $node instanceof Node\Stmt\ClassMethod && strpos($node->name->name, 'scope') === 0;
-        });
-
-        foreach ($methodNodes as $methodNode) {
-            $scopeName = lcfirst(substr($methodNode->name->name, 5));
-            $scopes[] = $scopeName;
-        }
-
-        return implode(', ', $scopes);
-    }
-
-    protected function getAttributes($ast)
-    {
-        $attributes = [];
-        $finder = new NodeFinder;
-        $propertyNodes = $finder->find($ast, function(Node $node) {
-            return $node instanceof Node\Stmt\Property;
-        });
-
-        foreach ($propertyNodes as $propertyNode) {
-            if ($propertyNode->isPublic()) {
-                foreach ($propertyNode->props as $prop) {
-                    $attributes[] = $prop->name->name;
-                }
+        if ($node->getDocComment()) {
+            $docComment = $node->getDocComment()->getText();
+            if (preg_match('/@description\s+(.+)/s', $docComment, $matches)) {
+                return trim($matches[1]);
             }
         }
-
-        return implode(', ', $attributes);
-    }
-
-    protected function getCasts($ast)
-    {
-        $casts = [];
-        $finder = new NodeFinder;
-        $propertyNode = $finder->findFirst($ast, function(Node $node) {
-            return $node instanceof Node\Stmt\Property && $node->props[0]->name->name === 'casts';
-        });
-
-        if ($propertyNode && $propertyNode->props[0]->default instanceof Node\Expr\Array_) {
-            foreach ($propertyNode->props[0]->default->items as $item) {
-                if ($item instanceof Node\Expr\ArrayItem) {
-                    $key = $item->key instanceof Node\Scalar\String_ ? $item->key->value : null;
-                    $value = $item->value instanceof Node\Scalar\String_ ? $item->value->value : null;
-                    if ($key && $value) {
-                        $casts[] = "$key: $value";
-                    }
-                }
-            }
-        }
-
-        return implode(', ', $casts);
+        return 'No description provided.';
     }
 }

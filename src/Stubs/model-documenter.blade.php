@@ -21,13 +21,13 @@
 @if($scopes)
 **Scopes:**
 @foreach($scopes as $scope)
-- {{ $scope->name }}: {{ $scope->description }}
+- {{ $scope['name'] }}: {{ $scope['description'] }}
 @endforeach
 @endif
 
 @if($casts)
 **Attribute Casts:**
-@foreach($casts as $attribute => $castType)
-- {{ $attribute }}: {{ $castType }}
+@foreach($casts as $cast)
+- {{ $cast['attribute'] }}: {{ $cast['type'] }}
 @endforeach
 @endif

@@ -60,6 +60,10 @@ php artisan vendor:publish --provider="Elalecs\LaravelDocumenter\LaravelDocument
 
 This will copy the stubs to your project's `resources/views/vendor/laravel-documenter` directory, allowing you to customize them.
 
+1. Ensure the stub follows the naming convention: `{type}-documenter.blade.php`
+2. Update the corresponding generator in `src/Generators` to use the new or modified stub
+3. If adding a new stub type, update the configuration file to include the new stub type
+
 ## DocBlocks
 
 DocBlocks are crucial for the proper functioning of Laravel Documenter. When contributing to this project or using it in your own projects, please ensure that your code includes comprehensive DocBlocks. Here are some guidelines:
