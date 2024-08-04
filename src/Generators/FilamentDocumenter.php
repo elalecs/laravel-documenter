@@ -51,6 +51,8 @@ class FilamentDocumenter extends BasePhpParserDocumenter
         }
 
         $resourceName = $classNode->name->toString();
+        $tableMethod = $this->findMethod($classNode, 'table');
+
         $this->documentation[$resourceName] = [
             'modelClass' => $this->getModelClass($classNode),
             'navigationIcon' => $this->getStaticPropertyValue($classNode, 'navigationIcon'),
@@ -60,11 +62,10 @@ class FilamentDocumenter extends BasePhpParserDocumenter
             'navigationGroup' => $this->getStaticPropertyValue($classNode, 'navigationGroup'),
             'navigationSort' => $this->getStaticPropertyValue($classNode, 'navigationSort'),
             'form' => $this->getForm($classNode),
-            'table' => $this->getTable($classNode),
-            'filters' => $this->getFilters($classNode),
-            'actions' => $this->getActions($classNode),
-            'relations' => $this->getRelations($classNode),
-            'pages' => $this->getPages($classNode),
+            'table' => $tableMethod ? $this->extractTableColumns($tableMethod) : [],
+            'filters' => $tableMethod ? $this->extractFilters($tableMethod) : [],
+            'actions' => $tableMethod ? $this->extractActions($tableMethod) : [],
+            'pages' => $this->extractPages($classNode),
         ];
     }
 
@@ -166,10 +167,6 @@ class FilamentDocumenter extends BasePhpParserDocumenter
     {
         $columns = [];
         $nodeFinder = new NodeFinder;
-        $nodeDumper = new NodeDumper;
-        
-        Log::info('Analyzing table method AST');
-        Log::debug('Full AST of table method: ' . $nodeDumper->dump($method));
         
         $returnStmt = $nodeFinder->findFirst($method, function(Node $node) {
             return $node instanceof Node\Stmt\Return_;
@@ -193,7 +190,6 @@ class FilamentDocumenter extends BasePhpParserDocumenter
             if ($item->value instanceof Node\Expr\MethodCall || $item->value instanceof Node\Expr\StaticCall) {
                 $column = $this->extractColumnInfo($item->value);
                 $columns[] = $column;
-                Log::info('Extracted column: ' . json_encode($column));
             }
         }
 
@@ -221,87 +217,7 @@ class FilamentDocumenter extends BasePhpParserDocumenter
             }
         }
 
-        Log::debug('Current node: ' . get_class($node) . ', Method: ' . ($node->name->name ?? 'N/A'));
-
         return $column;
-    }
-
-    protected function hasMethod(Node $node, string $methodName): bool
-    {
-        $nodeFinder = new NodeFinder;
-        $result = (bool) $nodeFinder->findFirst($node, function(Node $n) use ($methodName) {
-            return $n instanceof Node\Expr\MethodCall && $n->name->name === $methodName;
-        });
-        Log::info("Checking for method '$methodName': " . ($result ? 'true' : 'false'));
-        return $result;
-    }
-
-    protected function getFilters(Node\Stmt\Class_ $node)
-    {
-        $tableMethod = $this->findMethod($node, 'table');
-        if ($tableMethod) {
-            return $this->extractFilters($tableMethod);
-        }
-        return [];
-    }
-
-    protected function extractFilters(Node\Stmt\ClassMethod $method)
-    {
-        $filters = [];
-        $nodeFinder = new NodeFinder;
-        $filterNodes = $nodeFinder->find($method, function(Node $node) {
-            return $node instanceof Node\Expr\StaticCall && $node->class->toString() === 'Filters' && $node->name->name === 'make';
-        });
-
-        foreach ($filterNodes as $filterNode) {
-            $filter = [
-                'type' => $filterNode->name->name,
-                'name' => '',
-                'label' => '',
-            ];
-
-            if (isset($filterNode->args[0]) && $filterNode->args[0]->value instanceof Node\Scalar\String_) {
-                $filter['name'] = $filterNode->args[0]->value->value;
-            }
-
-            $labelNode = $nodeFinder->findFirst($filterNode, function(Node $n) {
-                return $n instanceof Node\Expr\MethodCall && $n->name->name === 'label';
-            });
-
-            if ($labelNode && isset($labelNode->args[0]) && $labelNode->args[0]->value instanceof Node\Scalar\String_) {
-                $filter['label'] = $labelNode->args[0]->value->value;
-            }
-
-            $filters[] = $filter;
-        }
-
-        return $filters;
-    }
-
-    protected function getActions(Node\Stmt\Class_ $node)
-    {
-        $tableMethod = $this->findMethod($node, 'table');
-        if ($tableMethod) {
-            return $this->extractActions($tableMethod);
-        }
-        return [];
-    }
-
-    protected function extractActions(Node\Stmt\ClassMethod $method)
-    {
-        $actions = [];
-        $nodeFinder = new NodeFinder;
-        $actionNodes = $nodeFinder->find($method, function(Node $node) {
-            return $node instanceof Node\Expr\StaticCall && Str::startsWith($node->class->toString(), 'Tables\Actions') && $node->name->name === 'make';
-        });
-
-        foreach ($actionNodes as $actionNode) {
-            $actions[] = [
-                'type' => $actionNode->class->getLast(),
-            ];
-        }
-
-        return $actions;
     }
 
     protected function getRelations(Node\Stmt\Class_ $node)
@@ -329,6 +245,24 @@ class FilamentDocumenter extends BasePhpParserDocumenter
         return $relations;
     }
 
+    protected function getFilters(Node\Stmt\Class_ $node)
+    {
+        $tableMethod = $this->findMethod($node, 'table');
+        if ($tableMethod) {
+            return $this->extractFilters($tableMethod);
+        }
+        return [];
+    }
+
+    protected function getActions(Node\Stmt\Class_ $node)
+    {
+        $tableMethod = $this->findMethod($node, 'table');
+        if ($tableMethod) {
+            return $this->extractActions($tableMethod);
+        }
+        return [];
+    }
+
     protected function getPages(Node\Stmt\Class_ $node)
     {
         $pagesMethod = $this->findMethod($node, 'getPages');
@@ -338,19 +272,118 @@ class FilamentDocumenter extends BasePhpParserDocumenter
         return [];
     }
 
-    protected function extractPages(Node\Stmt\ClassMethod $method)
+    protected function extractFilters(Node\Stmt\ClassMethod $method)
     {
-        $pages = [];
-        if ($method->stmts[0] instanceof Node\Stmt\Return_) {
-            $returnValue = $method->stmts[0]->expr;
-            if ($returnValue instanceof Node\Expr\Array_) {
-                foreach ($returnValue->items as $item) {
-                    if ($item->key instanceof Node\Scalar\String_ && $item->value instanceof Node\Expr\ClassConstFetch) {
-                        $pages[$item->key->value] = $item->value->class->toString();
-                    }
-                }
+        $filters = [];
+        $nodeFinder = new NodeFinder;
+        
+        $filtersNode = $nodeFinder->findFirst($method, function(Node $node) {
+            return $node instanceof Node\Expr\MethodCall && $node->name->name === 'filters';
+        });
+
+        if (!$filtersNode || !isset($filtersNode->args[0]) || !$filtersNode->args[0]->value instanceof Node\Expr\Array_) {
+            return $filters;
+        }
+
+        foreach ($filtersNode->args[0]->value->items as $item) {
+            if ($item->value instanceof Node\Expr\MethodCall || $item->value instanceof Node\Expr\StaticCall) {
+                $filter = $this->extractFilterInfo($item->value);
+                $filters[] = $filter;
             }
         }
+
+        return $filters;
+    }
+
+    protected function extractFilterInfo(Node $node, array $filter = [])
+    {
+        if ($node instanceof Node\Expr\StaticCall && $node->name->name === 'make') {
+            $filter['type'] = $node->class->getLast();
+            if (isset($node->args[0]) && $node->args[0]->value instanceof Node\Scalar\String_) {
+                $filter['name'] = $node->args[0]->value->value;
+            }
+        } elseif ($node instanceof Node\Expr\MethodCall) {
+            $methodName = $node->name->name;
+            if ($methodName === 'label' && isset($node->args[0]) && $node->args[0]->value instanceof Node\Scalar\String_) {
+                $filter['label'] = $node->args[0]->value->value;
+            } elseif ($methodName === 'attribute' && isset($node->args[0]) && $node->args[0]->value instanceof Node\Scalar\String_) {
+                $filter['attribute'] = $node->args[0]->value->value;
+            } elseif ($methodName === 'relationship' && isset($node->args[0]) && $node->args[0]->value instanceof Node\Scalar\String_) {
+                $filter['relationship'] = $node->args[0]->value->value;
+            }
+            
+            if ($node->var instanceof Node\Expr\MethodCall || $node->var instanceof Node\Expr\StaticCall) {
+                $filter = $this->extractFilterInfo($node->var, $filter);
+            }
+        }
+
+        return $filter;
+    }
+
+    protected function extractActions(Node\Stmt\ClassMethod $method)
+    {
+        $actions = [];
+        $nodeFinder = new NodeFinder;
+        
+        $actionsNode = $nodeFinder->findFirst($method, function(Node $node) {
+            return $node instanceof Node\Expr\MethodCall && $node->name->name === 'actions';
+        });
+
+        if (!$actionsNode || !isset($actionsNode->args[0]) || !$actionsNode->args[0]->value instanceof Node\Expr\Array_) {
+            return $actions;
+        }
+
+        foreach ($actionsNode->args[0]->value->items as $item) {
+            if ($item->value instanceof Node\Expr\MethodCall || $item->value instanceof Node\Expr\StaticCall) {
+                $action = $this->extractActionInfo($item->value);
+                $actions[] = $action;
+            }
+        }
+
+        return $actions;
+    }
+
+    protected function extractActionInfo(Node $node, array $action = [])
+    {
+        if ($node instanceof Node\Expr\StaticCall && $node->name->name === 'make') {
+            $action['type'] = $node->class->getLast();
+        } elseif ($node instanceof Node\Expr\MethodCall) {
+            $methodName = $node->name->name;
+            if ($methodName === 'label' && isset($node->args[0]) && $node->args[0]->value instanceof Node\Scalar\String_) {
+                $action['label'] = $node->args[0]->value->value;
+            }
+            
+            if ($node->var instanceof Node\Expr\MethodCall || $node->var instanceof Node\Expr\StaticCall) {
+                $action = $this->extractActionInfo($node->var, $action);
+            }
+        }
+
+        return $action;
+    }
+
+    protected function extractPages(Node\Stmt\Class_ $node)
+    {
+        $pages = [];
+        $pagesMethod = $this->findMethod($node, 'getPages');
+        if (!$pagesMethod) {
+            return $pages;
+        }
+
+        $nodeFinder = new NodeFinder;
+        $returnStmt = $nodeFinder->findFirst($pagesMethod, function(Node $n) {
+            return $n instanceof Node\Stmt\Return_;
+        });
+
+        if (!$returnStmt || !$returnStmt->expr instanceof Node\Expr\Array_) {
+            return $pages;
+        }
+
+        foreach ($returnStmt->expr->items as $item) {
+            if ($item->key instanceof Node\Scalar\String_ && $item->value instanceof Node\Expr\ClassConstFetch) {
+                $pages[$item->key->value] = $item->value->class->toString();
+            }
+        }
+
         return $pages;
     }
 
@@ -408,19 +441,27 @@ class FilamentDocumenter extends BasePhpParserDocumenter
 
             $output .= "### Filters:\n";
             foreach ($resource['filters'] as $filter) {
-                $output .= "- {$filter['type']}: {$filter['name']} (Label: {$filter['label']})\n";
+                $output .= "- {$filter['type']}: {$filter['name']}";
+                if (!empty($filter['label'])) {
+                    $output .= " (Label: {$filter['label']})";
+                }
+                if (!empty($filter['attribute'])) {
+                    $output .= " (Attribute: {$filter['attribute']})";
+                }
+                if (!empty($filter['relationship'])) {
+                    $output .= " (Relationship: {$filter['relationship']})";
+                }
+                $output .= "\n";
             }
             $output .= "\n";
 
             $output .= "### Actions:\n";
             foreach ($resource['actions'] as $action) {
-                $output .= "- {$action['type']}\n";
-            }
-            $output .= "\n";
-
-            $output .= "### Relations:\n";
-            foreach ($resource['relations'] as $relation) {
-                $output .= "- $relation\n";
+                $output .= "- {$action['type']}";
+                if (!empty($action['label'])) {
+                    $output .= " (Label: {$action['label']})";
+                }
+                $output .= "\n";
             }
             $output .= "\n";
 
