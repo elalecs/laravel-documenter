@@ -254,24 +254,6 @@ class FilamentDocumenter extends BasePhpParserDocumenter
         return [];
     }
 
-    protected function getActions(Node\Stmt\Class_ $node)
-    {
-        $tableMethod = $this->findMethod($node, 'table');
-        if ($tableMethod) {
-            return $this->extractActions($tableMethod);
-        }
-        return [];
-    }
-
-    protected function getPages(Node\Stmt\Class_ $node)
-    {
-        $pagesMethod = $this->findMethod($node, 'getPages');
-        if ($pagesMethod) {
-            return $this->extractPages($pagesMethod);
-        }
-        return [];
-    }
-
     protected function extractFilters(Node\Stmt\ClassMethod $method)
     {
         $filters = [];
@@ -320,6 +302,15 @@ class FilamentDocumenter extends BasePhpParserDocumenter
         return $filter;
     }
 
+    protected function getActions(Node\Stmt\Class_ $node)
+    {
+        $tableMethod = $this->findMethod($node, 'table');
+        if ($tableMethod) {
+            return $this->extractActions($tableMethod);
+        }
+        return [];
+    }
+
     protected function extractActions(Node\Stmt\ClassMethod $method)
     {
         $actions = [];
@@ -361,13 +352,26 @@ class FilamentDocumenter extends BasePhpParserDocumenter
         return $action;
     }
 
+    protected function getPages(Node\Stmt\Class_ $node)
+    {
+        $pagesMethod = $this->findMethod($node, 'getPages');
+        if ($pagesMethod) {
+            return $this->extractPages($pagesMethod);
+        }
+        return [];
+    }
+
     protected function extractPages(Node\Stmt\Class_ $node)
     {
         $pages = [];
         $pagesMethod = $this->findMethod($node, 'getPages');
         if (!$pagesMethod) {
+            Log::warning('getPages method not found');
             return $pages;
         }
+
+        $nodeDumper = new NodeDumper;
+        Log::debug('Full AST of getPages method: ' . $nodeDumper->dump($pagesMethod));
 
         $nodeFinder = new NodeFinder;
         $returnStmt = $nodeFinder->findFirst($pagesMethod, function(Node $n) {
@@ -375,14 +379,30 @@ class FilamentDocumenter extends BasePhpParserDocumenter
         });
 
         if (!$returnStmt || !$returnStmt->expr instanceof Node\Expr\Array_) {
+            Log::warning('Return statement not found or not an array in getPages method');
             return $pages;
         }
 
         foreach ($returnStmt->expr->items as $item) {
-            if ($item->key instanceof Node\Scalar\String_ && $item->value instanceof Node\Expr\ClassConstFetch) {
-                $pages[$item->key->value] = $item->value->class->toString();
+            if ($item->key instanceof Node\Scalar\String_ && $item->value instanceof Node\Expr\StaticCall) {
+                $pageType = $item->key->value;
+                $pageClass = $item->value->class->toString();
+                $pageRoute = '';
+                
+                if (isset($item->value->args[0]) && $item->value->args[0]->value instanceof Node\Scalar\String_) {
+                    $pageRoute = $item->value->args[0]->value->value;
+                }
+                
+                $pages[$pageType] = [
+                    'class' => $pageClass,
+                    'route' => $pageRoute
+                ];
+            } else {
+                Log::warning('Unexpected structure in getPages array item: ' . $nodeDumper->dump($item));
             }
         }
+
+        Log::info('Extracted pages: ' . json_encode($pages));
 
         return $pages;
     }
@@ -466,8 +486,10 @@ class FilamentDocumenter extends BasePhpParserDocumenter
             $output .= "\n";
 
             $output .= "### Pages:\n";
-            foreach ($resource['pages'] as $key => $page) {
-                $output .= "- $key: $page\n";
+            foreach ($resource['pages'] as $pageType => $pageInfo) {
+                $output .= "- $pageType:\n";
+                $output .= "  - Class: {$pageInfo['class']}\n";
+                $output .= "  - Route: {$pageInfo['route']}\n";
             }
             $output .= "\n";
         }
