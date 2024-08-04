@@ -7,7 +7,6 @@ use PhpParser\NodeFinder;
 use PhpParser\NodeDumper;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Log;
 
 class FilamentDocumenter extends BasePhpParserDocumenter
 {
@@ -156,10 +155,10 @@ class FilamentDocumenter extends BasePhpParserDocumenter
     {
         $tableMethod = $this->findMethod($node, 'table');
         if ($tableMethod) {
-            Log::info('Found table method');
+            $this->log('info', 'Found table method');
             return $this->extractTableColumns($tableMethod);
         }
-        Log::warning('Table method not found');
+        $this->log('warning', 'Table method not found');
         return [];
     }
 
@@ -173,7 +172,7 @@ class FilamentDocumenter extends BasePhpParserDocumenter
         });
 
         if (!$returnStmt) {
-            Log::warning('No return statement found in table method');
+            $this->log('warning', 'No return statement found in table method');
             return $columns;
         }
 
@@ -182,7 +181,7 @@ class FilamentDocumenter extends BasePhpParserDocumenter
         });
 
         if (!$columnsNode || !isset($columnsNode->args[0]) || !$columnsNode->args[0]->value instanceof Node\Expr\Array_) {
-            Log::warning('No columns array found in table method');
+            $this->log('warning', 'No columns array found in table method');
             return $columns;
         }
 
@@ -366,12 +365,12 @@ class FilamentDocumenter extends BasePhpParserDocumenter
         $pages = [];
         $pagesMethod = $this->findMethod($node, 'getPages');
         if (!$pagesMethod) {
-            Log::warning('getPages method not found');
+            $this->log('warning', 'getPages method not found');
             return $pages;
         }
 
         $nodeDumper = new NodeDumper;
-        Log::debug('Full AST of getPages method: ' . $nodeDumper->dump($pagesMethod));
+        $this->log('debug', 'Full AST of getPages method: ' . $nodeDumper->dump($pagesMethod));
 
         $nodeFinder = new NodeFinder;
         $returnStmt = $nodeFinder->findFirst($pagesMethod, function(Node $n) {
@@ -379,7 +378,7 @@ class FilamentDocumenter extends BasePhpParserDocumenter
         });
 
         if (!$returnStmt || !$returnStmt->expr instanceof Node\Expr\Array_) {
-            Log::warning('Return statement not found or not an array in getPages method');
+            $this->log('warning', 'Return statement not found or not an array in getPages method');
             return $pages;
         }
 
@@ -398,11 +397,11 @@ class FilamentDocumenter extends BasePhpParserDocumenter
                     'route' => $pageRoute
                 ];
             } else {
-                Log::warning('Unexpected structure in getPages array item: ' . $nodeDumper->dump($item));
+                $this->log('warning', 'Unexpected structure in getPages array item: ' . $nodeDumper->dump($item));
             }
         }
 
-        Log::info('Extracted pages: ' . json_encode($pages));
+        $this->log('info', 'Extracted pages: ' . json_encode($pages));
 
         return $pages;
     }

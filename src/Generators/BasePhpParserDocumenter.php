@@ -16,6 +16,8 @@ use PhpParser\Node\UnionType;
 use PhpParser\Node\Scalar\String_;
 use PhpParser\Node\Stmt\Namespace_;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Config;
 
 /**
  * Base class for PHP Parser based documenters.
@@ -62,6 +64,22 @@ abstract class BasePhpParserDocumenter
         $this->traverser = new NodeTraverser();
 
         $this->traverser->addVisitor(new NameResolver());
+    }
+
+    protected function log($level, $message)
+    {
+        if (isset($this->config['logging']['enabled']) && $this->config['logging']['enabled']) {
+            $logLevel = $this->config['logging']['level'] ?? 'warning';
+            if ($this->shouldLog($level, $logLevel)) {
+                Log::$level($message);
+            }
+        }
+    }
+
+    protected function shouldLog($messageLevel, $configLevel)
+    {
+        $levels = ['debug' => 0, 'info' => 1, 'warning' => 2, 'error' => 3];
+        return $levels[$messageLevel] >= $levels[$configLevel];
     }
 
     /**

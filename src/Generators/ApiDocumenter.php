@@ -5,13 +5,12 @@ namespace Elalecs\LaravelDocumenter\Generators;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\View;
 use Symfony\Component\Console\Output\BufferedOutput;
-use Illuminate\Support\Facades\Log;
 
 /**
  * Class ApiDocumenter
  * @package Elalecs\LaravelDocumenter\Generators
  */
-class ApiDocumenter
+class ApiDocumenter extends BasePhpParserDocumenter
 {
     /**
      * @var array
@@ -29,9 +28,10 @@ class ApiDocumenter
      */
     public function __construct($config)
     {
+        parent::__construct($config);
         $this->config = $config;
         $this->setStubPath();
-        Log::info('ApiDocumenter initialized');
+        $this->log('info', 'ApiDocumenter initialized');
     }
 
     /**
@@ -45,7 +45,7 @@ class ApiDocumenter
         if (!file_exists($this->stubPath)) {
             throw new \RuntimeException("API documenter stub not found at {$this->stubPath}");
         }
-        Log::info('Stub path set');
+        $this->log('info', 'Stub path set');
     }
 
     /**
@@ -54,7 +54,7 @@ class ApiDocumenter
      */
     public function generate()
     {
-        Log::info('Generating API documentation');
+        $this->log('info', 'Generating API documentation');
         $output = new BufferedOutput();
         Artisan::call('route:list', [
             '--json' => true,
@@ -79,7 +79,7 @@ class ApiDocumenter
      */
     protected function formatRoutesAsTable($routes)
     {
-        Log::info('Formatting routes as table');
+        $this->log('info', 'Formatting routes as table');
         $tableData = [];
 
         foreach ($routes as $route) {
@@ -102,7 +102,7 @@ class ApiDocumenter
      */
     protected function formatMethod($method)
     {
-        Log::info('Formatting HTTP method');
+        $this->log('info', 'Formatting HTTP method');
         if (is_array($method)) {
             return implode(',', $method);
         }
@@ -116,7 +116,7 @@ class ApiDocumenter
      */
     protected function formatMiddleware($middleware)
     {
-        Log::info('Formatting middleware');
+        $this->log('info', 'Formatting middleware');
         if (is_array($middleware)) {
             return implode(',', $middleware);
         }

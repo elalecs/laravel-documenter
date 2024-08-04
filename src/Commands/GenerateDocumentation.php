@@ -27,7 +27,7 @@ class GenerateDocumentation extends Command
         $output = $this->option('output');
 
         if ($output) {
-            config(['laravel-documenter.output_path' => $output]);
+            config(["laravel-documenter.output_path.{$type}" => $output]);
         }
 
         $this->info('Starting documentation generation...');
@@ -49,7 +49,9 @@ class GenerateDocumentation extends Command
         
         if (method_exists($this->documenter, $method)) {
             $documentation = $this->documenter->$method();
-            $this->generateContributing([$type => $documentation]);
+            $outputPath = config("laravel-documenter.output_path.{$type}");
+            File::put($outputPath, $documentation);
+            $this->info("Documentation for {$type} saved to: {$outputPath}");
         } else {
             $this->error("Unknown documentation type: $type");
         }

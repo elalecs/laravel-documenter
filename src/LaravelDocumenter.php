@@ -55,7 +55,26 @@ class LaravelDocumenter
             'filament' => $this->generateFilamentDocumentation(),
         ];
 
-        $this->generateContributingFile($documentation);
+        $this->generateIndividualFiles($documentation);
+        $this->generateMainContributingFile($documentation);
+    }
+
+    protected function generateIndividualFiles($documentation)
+    {
+        foreach ($documentation as $type => $content) {
+            $outputPath = config("laravel-documenter.output_path.{$type}");
+            File::put($outputPath, $content);
+        }
+    }
+
+    protected function generateMainContributingFile($documentation)
+    {
+        $content = View::file($this->getStubPath('contributing'), [
+            'projectName' => config('app.name'),
+            'documenters' => array_keys($documentation),
+        ])->render();
+
+        File::put(config('laravel-documenter.output_path.main'), $content);
     }
 
     /**

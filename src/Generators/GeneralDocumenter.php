@@ -6,7 +6,6 @@ use PhpParser\Node;
 use PhpParser\NodeFinder;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\View;
 
 /**
@@ -43,7 +42,7 @@ class GeneralDocumenter extends BasePhpParserDocumenter
         parent::__construct($config);
         $this->config = $config;
         $this->setStubPath();
-        Log::info('GeneralDocumenter initialized');
+        $this->log('info', 'GeneralDocumenter initialized');
     }
 
     /**
@@ -57,7 +56,7 @@ class GeneralDocumenter extends BasePhpParserDocumenter
         if (!File::exists($this->stubPath)) {
             throw new \RuntimeException("General documenter stub not found at {$this->stubPath}");
         }
-        Log::info('Stub path set');
+        $this->log('info', 'Stub path set');
     }
 
     /**
@@ -67,7 +66,7 @@ class GeneralDocumenter extends BasePhpParserDocumenter
      */
     public function generate()
     {
-        Log::info('Generating general documentation');
+        $this->log('info', 'Generating general documentation');
         $path = $this->config['path'] ?? app_path();
         $exclude = $this->config['exclude'] ?? ['Models', 'Filament'];
 
@@ -89,7 +88,7 @@ class GeneralDocumenter extends BasePhpParserDocumenter
      */
     protected function getPhpFiles($path, $exclude)
     {
-        Log::info('Getting PHP files');
+        $this->log('info', 'Getting PHP files');
         return collect(File::allFiles($path))
             ->filter(function ($file) use ($exclude) {
                 return $file->getExtension() === 'php' && 
@@ -104,7 +103,7 @@ class GeneralDocumenter extends BasePhpParserDocumenter
      */
     protected function documentFile($file)
     {
-        Log::info('Documenting file: ' . $file->getFilename());
+        $this->log('info', 'Documenting file: ' . $file->getFilename());
         $ast = $this->parseFile($file->getPathname());
         $namespace = $this->extractNamespace($ast);
         $className = $this->getClassName($ast);
@@ -265,7 +264,7 @@ class GeneralDocumenter extends BasePhpParserDocumenter
      */
     protected function formatDocumentation()
     {
-        Log::info('Formatting documentation');
+        $this->log('info', 'Formatting documentation');
         $output = '';
         foreach ($this->documentation as $section => $classes) {
             $output .= View::file($this->stubPath, [

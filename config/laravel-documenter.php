@@ -11,7 +11,13 @@ return [
     | project as CONTRIBUTING.md.
     |
     */
-    'output_path' => base_path('CONTRIBUTING.md'),
+    'output_path' => [
+        'main' => base_path('CONTRIBUTING.md'),
+        'general' => base_path('CONTRIBUTING.GENERAL.md'),
+        'model' => base_path('CONTRIBUTING.MODEL.md'),
+        'api' => base_path('CONTRIBUTING.API.md'),
+        'filament' => base_path('CONTRIBUTING.FILAMENT.md'),
+    ],
 
     /*
     |--------------------------------------------------------------------------
@@ -60,5 +66,20 @@ return [
     */
     'php_parser_options' => [
         'kind' => PhpParser\PhpVersion::fromString('8.0'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Logging Configuration
+    |--------------------------------------------------------------------------
+    |
+    | This value determines if logging is enabled and the level of logging
+    | that should be used. You can set the logging level to 'debug', 'info',
+    | 'warning', or 'error'.
+    |
+    */
+    'logging' => [
+        'enabled' => false,
+        'level' => 'warning', // 'debug', 'info', 'warning', 'error'
     ],
 ];

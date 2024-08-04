@@ -6,7 +6,6 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\View;
 use PhpParser\Node;
 use PhpParser\NodeFinder;
-use Illuminate\Support\Facades\Log;
 
 /**
  * Class ModelDocumenter
@@ -68,7 +67,7 @@ class ModelDocumenter extends BasePhpParserDocumenter
         parent::__construct($config);
         $this->config = $config;
         $this->setStubPath();
-        Log::info('ModelDocumenter initialized');
+        $this->log('info', 'ModelDocumenter initialized');
     }
 
     /**
@@ -82,7 +81,7 @@ class ModelDocumenter extends BasePhpParserDocumenter
         if (!File::exists($this->stubPath)) {
             throw new \RuntimeException("Model documenter stub not found at {$this->stubPath}");
         }
-        Log::info('Stub path set');
+        $this->log('info', 'Stub path set');
     }
 
     /**
@@ -91,7 +90,7 @@ class ModelDocumenter extends BasePhpParserDocumenter
      */
     public function generate()
     {
-        Log::info('Generating model documentation');
+        $this->log('info', 'Generating model documentation');
         $models = $this->getModels();
         $documentation = '';
 
@@ -108,7 +107,7 @@ class ModelDocumenter extends BasePhpParserDocumenter
      */
     protected function getModels()
     {
-        Log::info('Getting model files');
+        $this->log('info', 'Getting model files');
         $modelPath = $this->config['model_path'] ?? app_path('Models');
         return File::allFiles($modelPath);
     }
@@ -120,7 +119,7 @@ class ModelDocumenter extends BasePhpParserDocumenter
      */
     protected function documentModel($modelFile)
     {
-        Log::info('Documenting model: ' . $modelFile->getFilename());
+        $this->log('info', 'Documenting model: ' . $modelFile->getFilename());
         $ast = $this->parseFile($modelFile->getPathname());
 
         $this->extractModelInfo($ast);
@@ -143,7 +142,7 @@ class ModelDocumenter extends BasePhpParserDocumenter
      */
     protected function convertScopesToArray()
     {
-        Log::info('Converting scopes to array');
+        $this->log('info', 'Converting scopes to array');
         return array_map(function ($scope) {
             return [
                 'name' => $scope['name'],
@@ -158,7 +157,7 @@ class ModelDocumenter extends BasePhpParserDocumenter
      */
     protected function convertCastsToArray()
     {
-        Log::info('Converting casts to array');
+        $this->log('info', 'Converting casts to array');
         return array_map(function ($value, $key) {
             return [
                 'attribute' => $key instanceof Node\Scalar\String_ ? $key->value : (string)$key,
@@ -173,7 +172,7 @@ class ModelDocumenter extends BasePhpParserDocumenter
      */
     protected function extractModelInfo($ast)
     {
-        Log::info('Extracting model information');
+        $this->log('info', 'Extracting model information');
         $nodeFinder = new NodeFinder;
         
         $classNode = $nodeFinder->findFirst($ast, function(Node $node) {
@@ -201,7 +200,7 @@ class ModelDocumenter extends BasePhpParserDocumenter
      */
     protected function extractProperty(Node\Stmt\Property $property)
     {
-        Log::info('Extracting property information');
+        $this->log('info', 'Extracting property information');
         $propertyName = $property->props[0]->name->toString();
         
         if ($propertyName === 'table' && isset($property->props[0]->default)) {
@@ -221,7 +220,7 @@ class ModelDocumenter extends BasePhpParserDocumenter
      */
     protected function extractRelationship(Node\Stmt\ClassMethod $method)
     {
-        Log::info('Extracting relationship information');
+        $this->log('info', 'Extracting relationship information');
         $relationshipMethods = ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany', 'morphTo', 'morphMany', 'morphToMany'];
         
         $nodeFinder = new NodeFinder;
@@ -244,7 +243,7 @@ class ModelDocumenter extends BasePhpParserDocumenter
      */
     protected function extractScope(Node\Stmt\ClassMethod $method)
     {
-        Log::info('Extracting scope information');
+        $this->log('info', 'Extracting scope information');
         if (strpos($method->name->toString(), 'scope') === 0) {
             $scopeName = lcfirst(substr($method->name->toString(), 5));
             $this->scopes[] = [
@@ -261,7 +260,7 @@ class ModelDocumenter extends BasePhpParserDocumenter
      */
     protected function extractCasts($node)
     {
-        Log::info('Extracting casts information');
+        $this->log('info', 'Extracting casts information');
         $casts = [];
         if ($node instanceof Node\Expr\Array_) {
             foreach ($node->items as $item) {
@@ -284,7 +283,7 @@ class ModelDocumenter extends BasePhpParserDocumenter
      */
     protected function getModelDescription($ast)
     {
-        Log::info('Getting model description');
+        $this->log('info', 'Getting model description');
         $finder = new NodeFinder;
         $classNode = $finder->findFirst($ast, function(Node $node) {
             return $node instanceof Node\Stmt\Class_;
