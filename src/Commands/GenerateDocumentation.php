@@ -7,20 +7,46 @@ use Elalecs\LaravelDocumenter\LaravelDocumenter;
 
 class GenerateDocumentation extends Command
 {
+    /**
+     * The name and signature of the console command.
+     *
+     * @var string
+     */
     protected $signature = 'documenter:generate
                             {--type= : Specific type of documentation to generate (general, model, api, filament)}
                             {--output= : Custom output path for the documentation}';
 
+    /**
+     * The console command description.
+     *
+     * @var string
+     */
     protected $description = 'Generate documentation for your Laravel and Filament project';
 
+    /**
+     * The LaravelDocumenter instance.
+     *
+     * @var \Elalecs\LaravelDocumenter\LaravelDocumenter
+     */
     protected $documenter;
 
+    /**
+     * Create a new command instance.
+     *
+     * @param \Elalecs\LaravelDocumenter\LaravelDocumenter $documenter
+     * @return void
+     */
     public function __construct(LaravelDocumenter $documenter)
     {
         parent::__construct();
         $this->documenter = $documenter;
     }
 
+    /**
+     * Execute the console command.
+     *
+     * @return int
+     */
     public function handle()
     {
         $type = $this->option('type');
@@ -43,6 +69,12 @@ class GenerateDocumentation extends Command
         return Command::SUCCESS;
     }
 
+    /**
+     * Generate specific type of documentation.
+     *
+     * @param string $type
+     * @return void
+     */
     protected function generateSpecificDocumentation($type)
     {
         $method = 'generate' . ucfirst($type) . 'Documentation';
@@ -57,6 +89,12 @@ class GenerateDocumentation extends Command
         }
     }
 
+    /**
+     * Generate contributing file.
+     *
+     * @param string $documentation
+     * @return void
+     */
     protected function generateContributing($documentation)
     {
         $this->documenter->generateContributingFile($documentation);

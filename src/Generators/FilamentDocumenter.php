@@ -13,12 +13,22 @@ class FilamentDocumenter extends BasePhpParserDocumenter
     protected $config;
     protected $documentation = [];
 
+    /**
+     * Constructor method
+     *
+     * @param array $config Configuration array
+     */
     public function __construct($config)
     {
         parent::__construct($config);
         $this->config = $config;
     }
 
+    /**
+     * Generate documentation for Filament resources
+     *
+     * @return string Formatted documentation
+     */
     public function generate()
     {
         $resourceFiles = $this->getResourceFiles();
@@ -30,12 +40,22 @@ class FilamentDocumenter extends BasePhpParserDocumenter
         return $this->formatDocumentation();
     }
 
+    /**
+     * Get all resource files
+     *
+     * @return array List of resource files
+     */
     protected function getResourceFiles()
     {
         $path = $this->config['path'] ?? app_path('Filament/Resources');
         return File::allFiles($path);
     }
 
+    /**
+     * Document a single resource
+     *
+     * @param \SplFileInfo $file Resource file
+     */
     protected function documentResource($file)
     {
         $ast = $this->parseFile($file->getPathname());
@@ -68,6 +88,12 @@ class FilamentDocumenter extends BasePhpParserDocumenter
         ];
     }
 
+    /**
+     * Check if the class extends Filament Resource
+     *
+     * @param Node\Stmt\Class_ $node Class node
+     * @return bool True if extends Filament Resource, otherwise false
+     */
     protected function extendsFilamentResource(Node\Stmt\Class_ $node)
     {
         if ($node->extends) {
@@ -76,6 +102,12 @@ class FilamentDocumenter extends BasePhpParserDocumenter
         return false;
     }
 
+    /**
+     * Get the model class of the resource
+     *
+     * @param Node\Stmt\Class_ $node Class node
+     * @return string Model class name
+     */
     protected function getModelClass(Node\Stmt\Class_ $node)
     {
         $modelProperty = $this->findProperty($node, 'model');
@@ -85,6 +117,13 @@ class FilamentDocumenter extends BasePhpParserDocumenter
         return 'Unknown';
     }
 
+    /**
+     * Get the value of a static property
+     *
+     * @param Node\Stmt\Class_ $node Class node
+     * @param string $propertyName Property name
+     * @return string|null Property value or null if not found
+     */
     protected function getStaticPropertyValue(Node\Stmt\Class_ $node, $propertyName)
     {
         $property = $this->findProperty($node, $propertyName);
@@ -94,6 +133,12 @@ class FilamentDocumenter extends BasePhpParserDocumenter
         return null;
     }
 
+    /**
+     * Get the form schema of the resource
+     *
+     * @param Node\Stmt\Class_ $node Class node
+     * @return array Form schema
+     */
     protected function getForm(Node\Stmt\Class_ $node)
     {
         $formMethod = $this->findMethod($node, 'form');
@@ -103,6 +148,12 @@ class FilamentDocumenter extends BasePhpParserDocumenter
         return [];
     }
 
+    /**
+     * Extract the form schema from the method
+     *
+     * @param Node\Stmt\ClassMethod $method Method node
+     * @return array Form schema
+     */
     protected function extractFormSchema(Node\Stmt\ClassMethod $method)
     {
         $schema = [];
@@ -124,6 +175,12 @@ class FilamentDocumenter extends BasePhpParserDocumenter
         return $schema;
     }
 
+    /**
+     * Extract form field information
+     *
+     * @param Node\Expr\MethodCall $node Method call node
+     * @return array Form field information
+     */
     protected function extractFormField(Node\Expr\MethodCall $node)
     {
         $field = [
@@ -151,6 +208,12 @@ class FilamentDocumenter extends BasePhpParserDocumenter
         return $field;
     }
 
+    /**
+     * Get the table columns of the resource
+     *
+     * @param Node\Stmt\Class_ $node Class node
+     * @return array Table columns
+     */
     protected function getTable(Node\Stmt\Class_ $node)
     {
         $tableMethod = $this->findMethod($node, 'table');
@@ -162,6 +225,12 @@ class FilamentDocumenter extends BasePhpParserDocumenter
         return [];
     }
 
+    /**
+     * Extract table columns from the method
+     *
+     * @param Node\Stmt\ClassMethod $method Method node
+     * @return array Table columns
+     */
     protected function extractTableColumns(Node\Stmt\ClassMethod $method)
     {
         $columns = [];
@@ -195,6 +264,13 @@ class FilamentDocumenter extends BasePhpParserDocumenter
         return $columns;
     }
 
+    /**
+     * Extract column information
+     *
+     * @param Node $node Node
+     * @param array $column Column information
+     * @return array Column information
+     */
     protected function extractColumnInfo(Node $node, array $column = [])
     {
         if ($node instanceof Node\Expr\StaticCall && $node->name->name === 'make') {
@@ -210,7 +286,7 @@ class FilamentDocumenter extends BasePhpParserDocumenter
                 $column['attributes'][] = $methodName;
             }
             
-            // Procesar el nodo var recursivamente
+            // Process the var node recursively
             if ($node->var instanceof Node\Expr\MethodCall || $node->var instanceof Node\Expr\StaticCall) {
                 $column = $this->extractColumnInfo($node->var, $column);
             }
@@ -219,6 +295,12 @@ class FilamentDocumenter extends BasePhpParserDocumenter
         return $column;
     }
 
+    /**
+     * Get the relations of the resource
+     *
+     * @param Node\Stmt\Class_ $node Class node
+     * @return array Relations
+     */
     protected function getRelations(Node\Stmt\Class_ $node)
     {
         $relationsMethod = $this->findMethod($node, 'getRelations');
@@ -228,6 +310,12 @@ class FilamentDocumenter extends BasePhpParserDocumenter
         return [];
     }
 
+    /**
+     * Extract relations from the method
+     *
+     * @param Node\Stmt\ClassMethod $method Method node
+     * @return array Relations
+     */
     protected function extractRelations(Node\Stmt\ClassMethod $method)
     {
         $relations = [];
@@ -244,6 +332,12 @@ class FilamentDocumenter extends BasePhpParserDocumenter
         return $relations;
     }
 
+    /**
+     * Get the filters of the resource
+     *
+     * @param Node\Stmt\Class_ $node Class node
+     * @return array Filters
+     */
     protected function getFilters(Node\Stmt\Class_ $node)
     {
         $tableMethod = $this->findMethod($node, 'table');
@@ -253,6 +347,12 @@ class FilamentDocumenter extends BasePhpParserDocumenter
         return [];
     }
 
+    /**
+     * Extract filters from the method
+     *
+     * @param Node\Stmt\ClassMethod $method Method node
+     * @return array Filters
+     */
     protected function extractFilters(Node\Stmt\ClassMethod $method)
     {
         $filters = [];
@@ -276,6 +376,13 @@ class FilamentDocumenter extends BasePhpParserDocumenter
         return $filters;
     }
 
+    /**
+     * Extract filter information
+     *
+     * @param Node $node Node
+     * @param array $filter Filter information
+     * @return array Filter information
+     */
     protected function extractFilterInfo(Node $node, array $filter = [])
     {
         if ($node instanceof Node\Expr\StaticCall && $node->name->name === 'make') {
@@ -301,6 +408,12 @@ class FilamentDocumenter extends BasePhpParserDocumenter
         return $filter;
     }
 
+    /**
+     * Get the actions of the resource
+     *
+     * @param Node\Stmt\Class_ $node Class node
+     * @return array Actions
+     */
     protected function getActions(Node\Stmt\Class_ $node)
     {
         $tableMethod = $this->findMethod($node, 'table');
@@ -310,6 +423,12 @@ class FilamentDocumenter extends BasePhpParserDocumenter
         return [];
     }
 
+    /**
+     * Extract actions from the method
+     *
+     * @param Node\Stmt\ClassMethod $method Method node
+     * @return array Actions
+     */
     protected function extractActions(Node\Stmt\ClassMethod $method)
     {
         $actions = [];
@@ -333,6 +452,13 @@ class FilamentDocumenter extends BasePhpParserDocumenter
         return $actions;
     }
 
+    /**
+     * Extract action information
+     *
+     * @param Node $node Node
+     * @param array $action Action information
+     * @return array Action information
+     */
     protected function extractActionInfo(Node $node, array $action = [])
     {
         if ($node instanceof Node\Expr\StaticCall && $node->name->name === 'make') {
@@ -351,6 +477,12 @@ class FilamentDocumenter extends BasePhpParserDocumenter
         return $action;
     }
 
+    /**
+     * Get the pages of the resource
+     *
+     * @param Node\Stmt\Class_ $node Class node
+     * @return array Pages
+     */
     protected function getPages(Node\Stmt\Class_ $node)
     {
         $pagesMethod = $this->findMethod($node, 'getPages');
@@ -360,6 +492,12 @@ class FilamentDocumenter extends BasePhpParserDocumenter
         return [];
     }
 
+    /**
+     * Extract pages from the method
+     *
+     * @param Node\Stmt\Class_ $node Class node
+     * @return array Pages
+     */
     protected function extractPages(Node\Stmt\Class_ $node)
     {
         $pages = [];
@@ -406,6 +544,13 @@ class FilamentDocumenter extends BasePhpParserDocumenter
         return $pages;
     }
 
+    /**
+     * Find a property in the class
+     *
+     * @param Node\Stmt\Class_ $node Class node
+     * @param string $propertyName Property name
+     * @return Node\Stmt\Property|null Property node or null if not found
+     */
     protected function findProperty(Node\Stmt\Class_ $node, $propertyName)
     {
         foreach ($node->stmts as $stmt) {
@@ -416,6 +561,13 @@ class FilamentDocumenter extends BasePhpParserDocumenter
         return null;
     }
 
+    /**
+     * Find a method in the class
+     *
+     * @param Node\Stmt\Class_ $node Class node
+     * @param string $methodName Method name
+     * @return Node\Stmt\ClassMethod|null Method node or null if not found
+     */
     protected function findMethod(Node\Stmt\Class_ $node, $methodName)
     {
         foreach ($node->stmts as $stmt) {
@@ -426,6 +578,11 @@ class FilamentDocumenter extends BasePhpParserDocumenter
         return null;
     }
 
+    /**
+     * Format the documentation
+     *
+     * @return string Formatted documentation
+     */
     protected function formatDocumentation()
     {
         $output = '';

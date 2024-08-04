@@ -66,6 +66,13 @@ abstract class BasePhpParserDocumenter
         $this->traverser->addVisitor(new NameResolver());
     }
 
+    /**
+     * Log a message if logging is enabled and the log level is appropriate.
+     *
+     * @param string $level The log level (e.g., 'info', 'warning')
+     * @param string $message The message to log
+     * @return void
+     */
     protected function log($level, $message)
     {
         if (isset($this->config['logging']['enabled']) && $this->config['logging']['enabled']) {
@@ -76,6 +83,13 @@ abstract class BasePhpParserDocumenter
         }
     }
 
+    /**
+     * Determine if a message should be logged based on the configured log level.
+     *
+     * @param string $messageLevel The level of the message to log
+     * @param string $configLevel The configured log level
+     * @return bool True if the message should be logged, false otherwise
+     */
     protected function shouldLog($messageLevel, $configLevel)
     {
         $levels = ['debug' => 0, 'info' => 1, 'warning' => 2, 'error' => 3];
@@ -236,7 +250,7 @@ abstract class BasePhpParserDocumenter
         return 'Closure';
     }
 
-        /**
+    /**
      * Get the name of a type.
      *
      * @param Node $type The type node
