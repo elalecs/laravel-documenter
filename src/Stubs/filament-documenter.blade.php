@@ -1,40 +1,57 @@
 ## Filament Resource: {{ $resourceName }}
 
-{{ $description }}
+Description: {{ $description }}
 
 **Model:** {{ $modelClass }}
 
-@if($pages)
+@if(!empty($pages))
 **Pages:**
 @foreach($pages as $page)
-- {{ $page->name }}: {{ $page->class }}
+- {{ $page }}
 @endforeach
+@else
+No pages found.
 @endif
 
+@if(!empty($tableColumns))
 **Table Columns:**
 @foreach($tableColumns as $column)
-- {{ $column->name }}: {{ $column->component }}
-  {{ $column->description }}
+- {{ $column }}
 @endforeach
+@else
+No table columns found.
+@endif
 
+@if(!empty($formFields))
 **Form Fields:**
 @foreach($formFields as $field)
-- {{ $field->name }}: {{ $field->component }}
-  {{ $field->description }}
+- {{ $field['name'] }} ({{ $field['type'] }})
 @endforeach
+@else
+No form fields found.
+@endif
 
-@if($actions)
+@if(!empty($actions))
 **Actions:**
 @foreach($actions as $action)
-- {{ $action->name }}: {{ $action->class }}
-  {{ $action->description }}
+- {{ $action }}
 @endforeach
+@else
+No actions found.
 @endif
 
-@if($filters)
+@if(!empty($filters))
 **Filters:**
 @foreach($filters as $filter)
-- {{ $filter->name }}: {{ $filter->class }}
-  {{ $filter->description }}
+- {{ $filter }}
 @endforeach
+@else
+No filters found.
 @endif
+
+Debug Info:
+Pages: {{ json_encode($pages) }}
+Table Columns: {{ json_encode($tableColumns) }}
+Form Fields: {{ json_encode($formFields) }}
+Actions: {{ json_encode($actions) }}
+Filters: {{ json_encode($filters) }}

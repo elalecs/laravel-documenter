@@ -6,26 +6,74 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\View;
 use PhpParser\Node;
 use PhpParser\NodeFinder;
+use Illuminate\Support\Facades\Log;
 
+/**
+ * Class ModelDocumenter
+ * @package Elalecs\LaravelDocumenter\Generators
+ */
 class ModelDocumenter extends BasePhpParserDocumenter
 {
+    /**
+     * @var array
+     */
     protected $config;
+
+    /**
+     * @var string
+     */
     protected $stubPath;
+
+    /**
+     * @var string
+     */
     protected $className;
+
+    /**
+     * @var string
+     */
     protected $namespace;
+
+    /**
+     * @var string
+     */
     protected $tableName;
+
+    /**
+     * @var array
+     */
     protected $fillable = [];
+
+    /**
+     * @var array
+     */
     protected $relationships = [];
+
+    /**
+     * @var array
+     */
     protected $scopes = [];
+
+    /**
+     * @var array
+     */
     protected $casts = [];
 
+    /**
+     * ModelDocumenter constructor.
+     * @param array $config
+     */
     public function __construct($config)
     {
         parent::__construct();
         $this->config = $config;
         $this->setStubPath();
+        Log::info('ModelDocumenter initialized');
     }
 
+    /**
+     * Set the stub path for the model documenter
+     */
     protected function setStubPath()
     {
         $stubsPath = $this->config['stubs_path'] ?? __DIR__.'/../Stubs';
@@ -34,10 +82,16 @@ class ModelDocumenter extends BasePhpParserDocumenter
         if (!File::exists($this->stubPath)) {
             throw new \RuntimeException("Model documenter stub not found at {$this->stubPath}");
         }
+        Log::info('Stub path set');
     }
 
+    /**
+     * Generate the model documentation
+     * @return string
+     */
     public function generate()
     {
+        Log::info('Generating model documentation');
         $models = $this->getModels();
         $documentation = '';
 
@@ -48,14 +102,25 @@ class ModelDocumenter extends BasePhpParserDocumenter
         return $documentation;
     }
 
+    /**
+     * Get the model files
+     * @return array
+     */
     protected function getModels()
     {
+        Log::info('Getting model files');
         $modelPath = $this->config['model_path'] ?? app_path('Models');
         return File::allFiles($modelPath);
     }
 
+    /**
+     * Document a single model
+     * @param \SplFileInfo $modelFile
+     * @return string
+     */
     protected function documentModel($modelFile)
     {
+        Log::info('Documenting model: ' . $modelFile->getFilename());
         $ast = $this->parseFile($modelFile->getPathname());
 
         $this->extractModelInfo($ast);
@@ -72,15 +137,13 @@ class ModelDocumenter extends BasePhpParserDocumenter
         ])->render();
     }
 
-    protected function convertToStringArray($array)
-    {
-        return array_map(function ($item) {
-            return $item instanceof Node\Scalar\String_ ? $item->value : (string)$item;
-        }, $array);
-    }
-
+    /**
+     * Convert scopes to an array
+     * @return array
+     */
     protected function convertScopesToArray()
     {
+        Log::info('Converting scopes to array');
         return array_map(function ($scope) {
             return [
                 'name' => $scope['name'],
@@ -89,8 +152,13 @@ class ModelDocumenter extends BasePhpParserDocumenter
         }, $this->scopes);
     }
 
+    /**
+     * Convert casts to an array
+     * @return array
+     */
     protected function convertCastsToArray()
     {
+        Log::info('Converting casts to array');
         return array_map(function ($value, $key) {
             return [
                 'attribute' => $key instanceof Node\Scalar\String_ ? $key->value : (string)$key,
@@ -99,8 +167,13 @@ class ModelDocumenter extends BasePhpParserDocumenter
         }, $this->casts, array_keys($this->casts));
     }
 
+    /**
+     * Extract model information from the AST
+     * @param array $ast
+     */
     protected function extractModelInfo($ast)
     {
+        Log::info('Extracting model information');
         $nodeFinder = new NodeFinder;
         
         $classNode = $nodeFinder->findFirst($ast, function(Node $node) {
@@ -109,7 +182,7 @@ class ModelDocumenter extends BasePhpParserDocumenter
 
         if ($classNode) {
             $this->className = $classNode->name->toString();
-            $this->extractNamespace($ast);
+            $this->namespace = $this->extractNamespace($ast);
 
             foreach ($classNode->stmts as $stmt) {
                 if ($stmt instanceof Node\Stmt\Property) {
@@ -122,20 +195,13 @@ class ModelDocumenter extends BasePhpParserDocumenter
         }
     }
 
-    protected function extractNamespace($ast)
-    {
-        $nodeFinder = new NodeFinder;
-        $namespaceNode = $nodeFinder->findFirst($ast, function(Node $node) {
-            return $node instanceof Node\Stmt\Namespace_;
-        });
-
-        if ($namespaceNode) {
-            $this->namespace = $namespaceNode->name->toString();
-        }
-    }
-
+    /**
+     * Extract property information
+     * @param Node\Stmt\Property $property
+     */
     protected function extractProperty(Node\Stmt\Property $property)
     {
+        Log::info('Extracting property information');
         $propertyName = $property->props[0]->name->toString();
         
         if ($propertyName === 'table' && isset($property->props[0]->default)) {
@@ -149,8 +215,13 @@ class ModelDocumenter extends BasePhpParserDocumenter
         }
     }
 
+    /**
+     * Extract relationship information
+     * @param Node\Stmt\ClassMethod $method
+     */
     protected function extractRelationship(Node\Stmt\ClassMethod $method)
     {
+        Log::info('Extracting relationship information');
         $relationshipMethods = ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany', 'morphTo', 'morphMany', 'morphToMany'];
         
         $nodeFinder = new NodeFinder;
@@ -167,19 +238,13 @@ class ModelDocumenter extends BasePhpParserDocumenter
         }
     }
 
-    protected function getRelatedModel($node)
-    {
-        if ($node instanceof Node\Expr\ClassConstFetch) {
-            return $node->class->toString() . '::class';
-        } elseif ($node instanceof Node\Scalar\String_) {
-            return $node->value;
-        } else {
-            return 'Unknown';
-        }
-    }
-
+    /**
+     * Extract scope information
+     * @param Node\Stmt\ClassMethod $method
+     */
     protected function extractScope(Node\Stmt\ClassMethod $method)
     {
+        Log::info('Extracting scope information');
         if (strpos($method->name->toString(), 'scope') === 0) {
             $scopeName = lcfirst(substr($method->name->toString(), 5));
             $this->scopes[] = [
@@ -189,8 +254,14 @@ class ModelDocumenter extends BasePhpParserDocumenter
         }
     }
 
+    /**
+     * Extract casts information
+     * @param Node\Expr\Array_ $node
+     * @return array
+     */
     protected function extractCasts($node)
     {
+        Log::info('Extracting casts information');
         $casts = [];
         if ($node instanceof Node\Expr\Array_) {
             foreach ($node->items as $item) {
@@ -206,8 +277,14 @@ class ModelDocumenter extends BasePhpParserDocumenter
         return $casts;
     }
 
+    /**
+     * Get the model description from the docblock
+     * @param array $ast
+     * @return string
+     */
     protected function getModelDescription($ast)
     {
+        Log::info('Getting model description');
         $finder = new NodeFinder;
         $classNode = $finder->findFirst($ast, function(Node $node) {
             return $node instanceof Node\Stmt\Class_;
@@ -220,17 +297,6 @@ class ModelDocumenter extends BasePhpParserDocumenter
             }
         }
 
-        return 'No description provided.';
-    }
-
-    protected function getDocComment(Node $node)
-    {
-        if ($node->getDocComment()) {
-            $docComment = $node->getDocComment()->getText();
-            if (preg_match('/@description\s+(.+)/s', $docComment, $matches)) {
-                return trim($matches[1]);
-            }
-        }
         return 'No description provided.';
     }
 }
