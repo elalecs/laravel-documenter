@@ -1,4 +1,4 @@
-## {{ $sectionName }}
+## General: {{ $sectionName }}
 
 @foreach($classes as $class)
 ### {{ $class->namespace }}\{{ $class->className }}

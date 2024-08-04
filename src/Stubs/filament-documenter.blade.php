@@ -49,9 +49,4 @@ No actions found.
 No filters found.
 @endif
 
-Debug Info:
-Pages: {{ json_encode($pages) }}
-Table Columns: {{ json_encode($tableColumns) }}
-Form Fields: {{ json_encode($formFields) }}
-Actions: {{ json_encode($actions) }}
-Filters: {{ json_encode($filters) }}
+----
