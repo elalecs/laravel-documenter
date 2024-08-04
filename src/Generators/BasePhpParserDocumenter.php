@@ -12,6 +12,7 @@ use PhpParser\Node\Expr\ClassConstFetch;
 use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Name;
 use PhpParser\Node\NullableType;
+use PhpParser\Node\UnionType;
 use PhpParser\Node\Scalar\String_;
 use PhpParser\Node\Stmt\Namespace_;
 use Illuminate\Support\Facades\File;
@@ -217,7 +218,7 @@ abstract class BasePhpParserDocumenter
         return 'Closure';
     }
 
-    /**
+        /**
      * Get the name of a type.
      *
      * @param Node $type The type node
@@ -229,6 +230,8 @@ abstract class BasePhpParserDocumenter
             return $type->toString();
         } elseif ($type instanceof NullableType) {
             return '?' . $this->getTypeName($type->type);
+        } elseif ($type instanceof UnionType) {
+            return implode('|', array_map([$this, 'getTypeName'], $type->types));
         }
         return (string) $type;
     }

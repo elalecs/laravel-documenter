@@ -65,7 +65,7 @@ class ModelDocumenter extends BasePhpParserDocumenter
      */
     public function __construct($config)
     {
-        parent::__construct();
+        parent::__construct($config);
         $this->config = $config;
         $this->setStubPath();
         Log::info('ModelDocumenter initialized');
