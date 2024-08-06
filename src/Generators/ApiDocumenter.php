@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * This file contains the ApiDocumenter class which is responsible for generating API documentation
+ * based on the routes defined in a Laravel application.
+ */
+
 namespace Elalecs\LaravelDocumenter\Generators;
 
 use Illuminate\Support\Facades\Artisan;
@@ -8,23 +13,32 @@ use Symfony\Component\Console\Output\BufferedOutput;
 
 /**
  * Class ApiDocumenter
+ *
+ * This class extends BasePhpParserDocumenter and provides functionality to generate
+ * API documentation by parsing and formatting the application's routes.
+ *
  * @package Elalecs\LaravelDocumenter\Generators
  */
 class ApiDocumenter extends BasePhpParserDocumenter
 {
     /**
+     * Configuration array for the API documenter.
+     *
      * @var array
      */
     protected $config;
 
     /**
+     * Path to the stub file used for generating documentation.
+     *
      * @var string
      */
     protected $stubPath;
 
     /**
      * ApiDocumenter constructor.
-     * @param array $config
+     *
+     * @param array $config Configuration array for the API documenter
      */
     public function __construct($config)
     {
@@ -36,6 +50,9 @@ class ApiDocumenter extends BasePhpParserDocumenter
 
     /**
      * Set the stub path for the API documenter
+     *
+     * @throws \RuntimeException If the stub file is not found
+     * @return void
      */
     protected function setStubPath()
     {
@@ -50,7 +67,11 @@ class ApiDocumenter extends BasePhpParserDocumenter
 
     /**
      * Generate the API documentation
-     * @return string
+     *
+     * This method calls the Laravel route:list command, formats the output,
+     * and renders it using a blade template.
+     *
+     * @return string The rendered API documentation
      */
     public function generate()
     {
@@ -74,8 +95,11 @@ class ApiDocumenter extends BasePhpParserDocumenter
 
     /**
      * Format the routes as a table
-     * @param array $routes
-     * @return array
+     *
+     * This method takes the raw route data and formats it into a table structure.
+     *
+     * @param array $routes The raw route data
+     * @return array The formatted table data
      */
     protected function formatRoutesAsTable($routes)
     {
@@ -97,8 +121,11 @@ class ApiDocumenter extends BasePhpParserDocumenter
 
     /**
      * Format the HTTP method
-     * @param string|array $method
-     * @return string
+     *
+     * This method ensures that the HTTP method is always returned as a string.
+     *
+     * @param string|array $method The HTTP method(s)
+     * @return string The formatted HTTP method(s)
      */
     protected function formatMethod($method)
     {
@@ -111,8 +138,11 @@ class ApiDocumenter extends BasePhpParserDocumenter
 
     /**
      * Format the middleware
-     * @param string|array $middleware
-     * @return string
+     *
+     * This method ensures that the middleware is always returned as a string.
+     *
+     * @param string|array $middleware The middleware(s)
+     * @return string The formatted middleware(s)
      */
     protected function formatMiddleware($middleware)
     {

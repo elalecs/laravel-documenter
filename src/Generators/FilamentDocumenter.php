@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * This file contains the FilamentDocumenter class, which is responsible for generating
+ * documentation for Filament resources using PHP Parser.
+ */
+
 namespace Elalecs\LaravelDocumenter\Generators;
 
 use PhpParser\Node;
@@ -8,15 +13,28 @@ use PhpParser\NodeDumper;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 
+/**
+ * Class FilamentDocumenter
+ *
+ * This class extends BasePhpParserDocumenter and provides functionality to generate
+ * documentation for Filament resources.
+ */
 class FilamentDocumenter extends BasePhpParserDocumenter
 {
+    /**
+     * @var array Configuration array for the documenter
+     */
     protected $config;
+
+    /**
+     * @var array Generated documentation storage
+     */
     protected $documentation = [];
 
     /**
-     * Constructor method
+     * Constructor for FilamentDocumenter
      *
-     * @param array $config Configuration array
+     * @param array $config Configuration array for the documenter
      */
     public function __construct($config)
     {
@@ -174,6 +192,14 @@ class FilamentDocumenter extends BasePhpParserDocumenter
         return $schema;
     }
     
+    /**
+     * Extract schema item information
+     *
+     * @param Node $node Node to extract information from
+     * @param array $schema Reference to the schema array
+     * @param string|null $parentComponent Parent component type
+     * @param NodeFinder $nodeFinder NodeFinder instance
+     */
     protected function extractSchemaItem($node, &$schema, $parentComponent = null, NodeFinder $nodeFinder)
     {
         if ($node instanceof Node\Expr\MethodCall) {
@@ -203,6 +229,12 @@ class FilamentDocumenter extends BasePhpParserDocumenter
         }
     }
     
+    /**
+     * Get the component type from a method call node
+     *
+     * @param Node\Expr\MethodCall $node Method call node
+     * @return string Component type
+     */
     protected function getComponentType(Node\Expr\MethodCall $node)
     {
         while ($node->var instanceof Node\Expr\MethodCall) {
@@ -216,6 +248,12 @@ class FilamentDocumenter extends BasePhpParserDocumenter
         return 'Unknown';
     }
     
+    /**
+     * Get the field name from a method call node
+     *
+     * @param Node\Expr\MethodCall $node Method call node
+     * @return string Field name
+     */
     protected function getFieldName(Node\Expr\MethodCall $node)
     {
         $makeMethod = $this->findMethodCall($node, 'make');
@@ -225,6 +263,12 @@ class FilamentDocumenter extends BasePhpParserDocumenter
         return '';
     }
     
+    /**
+     * Get the field label from a method call node
+     *
+     * @param Node\Expr\MethodCall $node Method call node
+     * @return string Field label
+     */
     protected function getFieldLabel(Node\Expr\MethodCall $node)
     {
         $labelMethod = $this->findMethodCall($node, 'label');
@@ -234,6 +278,13 @@ class FilamentDocumenter extends BasePhpParserDocumenter
         return '';
     }
     
+    /**
+     * Find a specific method call in a chain of method calls
+     *
+     * @param Node\Expr\MethodCall $node Method call node
+     * @param string $methodName Method name to find
+     * @return Node\Expr\MethodCall|null Found method call node or null
+     */
     protected function findMethodCall(Node\Expr\MethodCall $node, $methodName)
     {
         if ($node->name->name === $methodName) {

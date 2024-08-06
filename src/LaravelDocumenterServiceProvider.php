@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * This file contains the LaravelDocumenterServiceProvider class which is responsible for
+ * registering and bootstrapping the Laravel Documenter package.
+ */
+
 namespace Elalecs\LaravelDocumenter;
 
 use Illuminate\Support\ServiceProvider;
@@ -11,11 +16,17 @@ use Elalecs\LaravelDocumenter\Generators\FilamentDocumenter;
 
 /**
  * Service provider for Laravel Documenter package.
+ *
+ * This class is responsible for registering and bootstrapping the Laravel Documenter package,
+ * including publishing configuration files, registering commands, and binding documenters.
  */
 class LaravelDocumenterServiceProvider extends ServiceProvider
 {
     /**
      * Bootstrap any application services.
+     *
+     * This method is called after all other service providers have been registered.
+     * It's used to publish configuration files, views, and register console commands.
      *
      * @return void
      */
@@ -39,6 +50,9 @@ class LaravelDocumenterServiceProvider extends ServiceProvider
     /**
      * Register any application services.
      *
+     * This method is called immediately after the service provider is registered.
+     * It's used to bind things into the service container.
+     *
      * @return void
      */
     public function register()
@@ -56,6 +70,8 @@ class LaravelDocumenterServiceProvider extends ServiceProvider
 
     /**
      * Register the documenters.
+     *
+     * This method binds the various documenter classes into the service container.
      *
      * @return void
      */

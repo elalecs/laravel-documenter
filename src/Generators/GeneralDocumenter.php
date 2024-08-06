@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * This file contains the GeneralDocumenter class which is responsible for generating
+ * documentation for general PHP classes in a Laravel project.
+ */
+
 namespace Elalecs\LaravelDocumenter\Generators;
 
 use PhpParser\Node;
@@ -12,22 +17,29 @@ use Illuminate\Support\Facades\View;
  * Class GeneralDocumenter
  * 
  * This class is responsible for generating documentation for general PHP classes in a Laravel project.
+ * It extends BasePhpParserDocumenter and provides methods to parse, analyze, and document PHP files.
  * 
  * @package Elalecs\LaravelDocumenter\Generators
  */
 class GeneralDocumenter extends BasePhpParserDocumenter
 {
     /**
+     * Configuration array for the documenter.
+     *
      * @var array
      */
     protected $config;
 
     /**
+     * Path to the stub file used for documentation generation.
+     *
      * @var string
      */
     protected $stubPath;
 
     /**
+     * Array to store the generated documentation.
+     *
      * @var array
      */
     protected $documentation = [];
@@ -35,7 +47,7 @@ class GeneralDocumenter extends BasePhpParserDocumenter
     /**
      * GeneralDocumenter constructor.
      * 
-     * @param array $config
+     * @param array $config Configuration array for the documenter
      */
     public function __construct($config)
     {
@@ -46,7 +58,10 @@ class GeneralDocumenter extends BasePhpParserDocumenter
     }
 
     /**
-     * Set the stub path for the general documenter
+     * Set the stub path for the general documenter.
+     *
+     * @throws \RuntimeException If the stub file is not found
+     * @return void
      */
     protected function setStubPath()
     {
@@ -62,7 +77,7 @@ class GeneralDocumenter extends BasePhpParserDocumenter
     /**
      * Generate the documentation for general classes.
      * 
-     * @return string
+     * @return string The generated documentation as a string
      */
     public function generate()
     {
@@ -82,9 +97,9 @@ class GeneralDocumenter extends BasePhpParserDocumenter
     /**
      * Get PHP files from the specified path, excluding certain directories.
      * 
-     * @param string $path
-     * @param array $exclude
-     * @return \Illuminate\Support\Collection
+     * @param string $path The base path to search for PHP files
+     * @param array $exclude An array of directory names to exclude
+     * @return \Illuminate\Support\Collection A collection of SplFileInfo objects
      */
     protected function getPhpFiles($path, $exclude)
     {
@@ -99,7 +114,8 @@ class GeneralDocumenter extends BasePhpParserDocumenter
     /**
      * Document a single PHP file.
      * 
-     * @param \SplFileInfo $file
+     * @param \SplFileInfo $file The file to document
+     * @return void
      */
     protected function documentFile($file)
     {
@@ -124,8 +140,8 @@ class GeneralDocumenter extends BasePhpParserDocumenter
     /**
      * Get the section name based on the file path.
      * 
-     * @param \SplFileInfo $file
-     * @return string
+     * @param \SplFileInfo $file The file object
+     * @return string The section name
      */
     protected function getSection($file)
     {
@@ -136,8 +152,8 @@ class GeneralDocumenter extends BasePhpParserDocumenter
     /**
      * Get the class name from the AST.
      * 
-     * @param array $ast
-     * @return string|null
+     * @param array $ast The Abstract Syntax Tree
+     * @return string|null The class name if found, null otherwise
      */
     protected function getClassName($ast)
     {
@@ -186,8 +202,8 @@ class GeneralDocumenter extends BasePhpParserDocumenter
     /**
      * Get the class description from the AST.
      * 
-     * @param array $ast
-     * @return string
+     * @param array $ast The Abstract Syntax Tree
+     * @return string The class description
      */
     protected function getClassDescription($ast)
     {
@@ -202,8 +218,8 @@ class GeneralDocumenter extends BasePhpParserDocumenter
     /**
      * Get traits used by the class.
      * 
-     * @param array $ast
-     * @return array
+     * @param array $ast The Abstract Syntax Tree
+     * @return array An array of trait names
      */
     protected function getTraits($ast)
     {
@@ -220,8 +236,8 @@ class GeneralDocumenter extends BasePhpParserDocumenter
     /**
      * Get properties of the class.
      * 
-     * @param array $ast
-     * @return array
+     * @param array $ast The Abstract Syntax Tree
+     * @return array An array of property information
      */
     protected function getProperties($ast)
     {
@@ -243,8 +259,8 @@ class GeneralDocumenter extends BasePhpParserDocumenter
     /**
      * Get methods of the class.
      * 
-     * @param array $ast
-     * @return array
+     * @param array $ast The Abstract Syntax Tree
+     * @return array An array of method information
      */
     protected function getMethods($ast)
     {
@@ -267,8 +283,8 @@ class GeneralDocumenter extends BasePhpParserDocumenter
     /**
      * Get the access type of a class member.
      * 
-     * @param Node $node
-     * @return string
+     * @param Node $node The node representing a class member
+     * @return string The access type (public, protected, or private)
      */
     protected function getAccessType(Node $node)
     {
@@ -281,8 +297,8 @@ class GeneralDocumenter extends BasePhpParserDocumenter
     /**
      * Get the parameters of a method.
      * 
-     * @param Node\Stmt\ClassMethod $method
-     * @return string
+     * @param Node\Stmt\ClassMethod $method The method node
+     * @return string A string representation of the method parameters
      */
     protected function getParameters(Node\Stmt\ClassMethod $method)
     {
@@ -294,7 +310,7 @@ class GeneralDocumenter extends BasePhpParserDocumenter
     /**
      * Format the documentation into a string.
      * 
-     * @return string
+     * @return string The formatted documentation
      */
     protected function formatDocumentation()
     {

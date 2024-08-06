@@ -1,11 +1,22 @@
 <?php
 
+/**
+ * This file contains the GenerateDocumentation command class for the Laravel Documenter package.
+ * It provides functionality to generate various types of documentation for Laravel and Filament projects.
+ */
+
 namespace Elalecs\LaravelDocumenter\Commands;
 
 use Illuminate\Console\Command;
 use Elalecs\LaravelDocumenter\LaravelDocumenter;
 use Illuminate\Support\Facades\File;
 
+/**
+ * Class GenerateDocumentation
+ *
+ * This command class is responsible for generating documentation for Laravel and Filament projects.
+ * It allows users to generate specific types of documentation or all types at once.
+ */
 class GenerateDocumentation extends Command
 {
     /**
@@ -34,7 +45,7 @@ class GenerateDocumentation extends Command
     /**
      * Create a new command instance.
      *
-     * @param \Elalecs\LaravelDocumenter\LaravelDocumenter $documenter
+     * @param \Elalecs\LaravelDocumenter\LaravelDocumenter $documenter The LaravelDocumenter instance
      * @return void
      */
     public function __construct(LaravelDocumenter $documenter)
@@ -45,6 +56,9 @@ class GenerateDocumentation extends Command
 
     /**
      * Execute the console command.
+     *
+     * This method handles the execution of the command, generating either specific
+     * documentation types or all types based on the provided options.
      *
      * @return int
      */
@@ -73,8 +87,11 @@ class GenerateDocumentation extends Command
     /**
      * Generate specific type of documentation.
      *
-     * @param string $type
+     * This method generates documentation for a specific type and saves it to the configured output path.
+     *
+     * @param string $type The type of documentation to generate
      * @return void
+     * @throws \RuntimeException If the specified documentation type is unknown
      */
     protected function generateSpecificDocumentation($type)
     {
@@ -93,7 +110,9 @@ class GenerateDocumentation extends Command
     /**
      * Generate contributing file.
      *
-     * @param string $documentation
+     * This method generates a contributing file and saves it to the configured output path.
+     *
+     * @param string $documentation The content of the contributing file
      * @return void
      */
     protected function generateContributing($documentation)

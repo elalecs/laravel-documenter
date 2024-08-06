@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * This file contains the BasePhpParserDocumenter class, which serves as a foundation
+ * for PHP Parser based documenters in the Laravel Documenter package.
+ */
+
 namespace Elalecs\LaravelDocumenter\Generators;
 
 use PhpParser\NodeTraverser;
@@ -23,8 +28,9 @@ use Illuminate\Support\Facades\Config;
  * Base class for PHP Parser based documenters.
  * 
  * This abstract class provides common functionality for documenters that use PHP Parser
- * to parse and traverse PHP code. It sets up the parser and traverser, and provides a
- * method to parse a file and traverse its Abstract Syntax Tree (AST).
+ * to parse and traverse PHP code. It sets up the parser and traverser, and provides
+ * methods to parse files, traverse Abstract Syntax Trees (AST), and perform various
+ * utility functions for documentation generation.
  */
 abstract class BasePhpParserDocumenter
 {
@@ -52,7 +58,7 @@ abstract class BasePhpParserDocumenter
     /**
      * Create a new BasePhpParserDocumenter instance.
      *
-     * @param array $config The configuration array
+     * @param array $config The configuration array for the documenter
      * @return void
      */
     public function __construct($config)
@@ -84,6 +90,11 @@ abstract class BasePhpParserDocumenter
         }
     }
 
+    /**
+     * Get the current microtime as a formatted string.
+     *
+     * @return string The formatted microtime
+     */
     protected function getMicrotime()
     {
         $mt = explode(' ', microtime());
@@ -108,6 +119,7 @@ abstract class BasePhpParserDocumenter
      *
      * @param string $filePath The path to the PHP file to parse
      * @return array The traversed AST nodes
+     * @throws \Exception If the file cannot be read or parsed
      */
     protected function parseFile($filePath)
     {
@@ -124,7 +136,7 @@ abstract class BasePhpParserDocumenter
     /**
      * Generate the documentation.
      *
-     * @return mixed
+     * @return mixed The generated documentation
      */
     abstract public function generate();
 
@@ -148,8 +160,8 @@ abstract class BasePhpParserDocumenter
     /**
      * Convert an array of nodes to an array of strings.
      *
-     * @param array $array The array to convert
-     * @return array The converted array
+     * @param array $array The array of nodes to convert
+     * @return array The converted array of strings
      */
     protected function convertToStringArray($array)
     {

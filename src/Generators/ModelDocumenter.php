@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * This file contains the ModelDocumenter class which is responsible for generating
+ * documentation for Laravel Eloquent models.
+ */
+
 namespace Elalecs\LaravelDocumenter\Generators;
 
 use Illuminate\Support\Facades\File;
@@ -10,58 +15,81 @@ use PhpParser\NodeDumper;
 
 /**
  * Class ModelDocumenter
+ *
+ * This class extends BasePhpParserDocumenter and provides functionality to generate
+ * documentation for Laravel Eloquent models by parsing and analyzing their structure.
+ *
  * @package Elalecs\LaravelDocumenter\Generators
  */
 class ModelDocumenter extends BasePhpParserDocumenter
 {
     /**
+     * Configuration array for the model documenter.
+     *
      * @var array
      */
     protected $config;
 
     /**
+     * Path to the stub file used for documentation generation.
+     *
      * @var string
      */
     protected $stubPath;
 
     /**
+     * Name of the model class being documented.
+     *
      * @var string
      */
     protected $className;
 
     /**
+     * Namespace of the model class being documented.
+     *
      * @var string
      */
     protected $namespace;
 
     /**
+     * Name of the database table associated with the model.
+     *
      * @var string
      */
     protected $tableName;
 
     /**
+     * Array of fillable attributes for the model.
+     *
      * @var array
      */
     protected $fillable = [];
 
     /**
+     * Array of relationships defined in the model.
+     *
      * @var array
      */
     protected $relationships = [];
 
     /**
+     * Array of scopes defined in the model.
+     *
      * @var array
      */
     protected $scopes = [];
 
     /**
+     * Array of attribute casts defined in the model.
+     *
      * @var array
      */
     protected $casts = [];
 
     /**
      * ModelDocumenter constructor.
-     * @param array $config
+     *
+     * @param array $config Configuration array for the model documenter
      */
     public function __construct($config)
     {
@@ -73,6 +101,9 @@ class ModelDocumenter extends BasePhpParserDocumenter
 
     /**
      * Set the stub path for the model documenter
+     *
+     * @throws \RuntimeException If the stub file is not found
+     * @return void
      */
     protected function setStubPath()
     {
@@ -87,7 +118,8 @@ class ModelDocumenter extends BasePhpParserDocumenter
 
     /**
      * Generate the model documentation
-     * @return string
+     *
+     * @return string The generated documentation as a string
      */
     public function generate()
     {
@@ -103,7 +135,8 @@ class ModelDocumenter extends BasePhpParserDocumenter
 
     /**
      * Get the model files
-     * @return array
+     *
+     * @return array An array of SplFileInfo objects representing the model files
      */
     protected function getModels()
     {
@@ -113,8 +146,9 @@ class ModelDocumenter extends BasePhpParserDocumenter
 
     /**
      * Document a single model
-     * @param \SplFileInfo $modelFile
-     * @return string
+     *
+     * @param \SplFileInfo $modelFile The model file to document
+     * @return string The generated documentation for the model
      */
     protected function documentModel($modelFile)
     {
@@ -136,7 +170,8 @@ class ModelDocumenter extends BasePhpParserDocumenter
 
     /**
      * Convert scopes to an array
-     * @return array
+     *
+     * @return array An array of scopes with their names and descriptions
      */
     protected function convertScopesToArray()
     {
@@ -150,7 +185,8 @@ class ModelDocumenter extends BasePhpParserDocumenter
 
     /**
      * Convert casts to an array
-     * @return array
+     *
+     * @return array An array of casts with their attributes and types
      */
     protected function convertCastsToArray()
     {
@@ -164,7 +200,9 @@ class ModelDocumenter extends BasePhpParserDocumenter
 
     /**
      * Extract model information from the AST
-     * @param array $ast
+     *
+     * @param array $ast The Abstract Syntax Tree of the model file
+     * @return void
      */
     protected function extractModelInfo($ast)
     {
@@ -191,7 +229,9 @@ class ModelDocumenter extends BasePhpParserDocumenter
 
     /**
      * Extract property information
-     * @param Node\Stmt\Property $property
+     *
+     * @param Node\Stmt\Property $property The property node to extract information from
+     * @return void
      */
     protected function extractProperty(Node\Stmt\Property $property)
     {
@@ -210,7 +250,9 @@ class ModelDocumenter extends BasePhpParserDocumenter
 
     /**
      * Extract relationship information
-     * @param Node\Stmt\ClassMethod $method
+     *
+     * @param Node\Stmt\ClassMethod $method The method node to extract relationship information from
+     * @return void
      */
     protected function extractRelationship(Node\Stmt\ClassMethod $method)
     {
@@ -232,7 +274,9 @@ class ModelDocumenter extends BasePhpParserDocumenter
 
     /**
      * Extract scope information
-     * @param Node\Stmt\ClassMethod $method
+     *
+     * @param Node\Stmt\ClassMethod $method The method node to extract scope information from
+     * @return void
      */
     protected function extractScope(Node\Stmt\ClassMethod $method)
     {
@@ -247,8 +291,9 @@ class ModelDocumenter extends BasePhpParserDocumenter
 
     /**
      * Extract casts information
-     * @param Node\Expr\Array_ $node
-     * @return array
+     *
+     * @param Node\Expr\Array_ $node The array node containing cast information
+     * @return array An array of casts with their attributes and types
      */
     protected function extractCasts($node)
     {
@@ -269,8 +314,9 @@ class ModelDocumenter extends BasePhpParserDocumenter
 
     /**
      * Get the model description from the docblock
-     * @param array $ast
-     * @return string
+     *
+     * @param array $ast The Abstract Syntax Tree of the model file
+     * @return string The extracted model description or a default message if not found
      */
     protected function getModelDescription($ast)
     {

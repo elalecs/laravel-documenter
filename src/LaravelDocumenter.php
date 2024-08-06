@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * This file contains the LaravelDocumenter class which is responsible for generating
+ * comprehensive documentation for a Laravel application.
+ */
+
 namespace Elalecs\LaravelDocumenter;
 
 use Illuminate\Contracts\Foundation\Application;
@@ -9,7 +14,8 @@ use Illuminate\Support\Facades\File;
 /**
  * Class LaravelDocumenter
  * 
- * This class is responsible for generating documentation for a Laravel application.
+ * This class is responsible for generating and managing various types of documentation
+ * for a Laravel application, including general, model, API, and Filament documentation.
  * 
  * @package Elalecs\LaravelDocumenter
  */
@@ -32,8 +38,7 @@ class LaravelDocumenter
     /**
      * Create a new LaravelDocumenter instance.
      *
-     * @param  \Illuminate\Contracts\Foundation\Application  $app
-     * @return void
+     * @param  \Illuminate\Contracts\Foundation\Application  $app The Laravel application instance
      */
     public function __construct(Application $app)
     {
@@ -43,6 +48,9 @@ class LaravelDocumenter
 
     /**
      * Generate the documentation.
+     *
+     * This method orchestrates the generation of all types of documentation
+     * and creates both individual files and a main contributing file.
      *
      * @return void
      */
@@ -59,6 +67,12 @@ class LaravelDocumenter
         $this->generateMainContributingFile($documentation);
     }
 
+    /**
+     * Generate individual documentation files.
+     *
+     * @param array $documentation An associative array of documentation types and their content
+     * @return void
+     */
     protected function generateIndividualFiles($documentation)
     {
         foreach ($documentation as $type => $content) {
@@ -67,6 +81,12 @@ class LaravelDocumenter
         }
     }
 
+    /**
+     * Generate the main contributing file.
+     *
+     * @param array $documentation An associative array of documentation types and their content
+     * @return void
+     */
     protected function generateMainContributingFile($documentation)
     {
         $content = View::file($this->getStubPath('contributing'), [
@@ -80,7 +100,7 @@ class LaravelDocumenter
     /**
      * Generate the general documentation.
      *
-     * @return string
+     * @return string The generated general documentation content
      */
     public function generateGeneralDocumentation()
     {
@@ -90,7 +110,7 @@ class LaravelDocumenter
     /**
      * Generate the model documentation.
      *
-     * @return string
+     * @return string The generated model documentation content
      */
     public function generateModelDocumentation()
     {
@@ -100,7 +120,7 @@ class LaravelDocumenter
     /**
      * Generate the API documentation.
      *
-     * @return string
+     * @return string The generated API documentation content
      */
     public function generateApiDocumentation()
     {
@@ -110,18 +130,17 @@ class LaravelDocumenter
     /**
      * Generate the Filament documentation.
      *
-     * @return string
+     * @return string The generated Filament documentation content
      */
     public function generateFilamentDocumentation()
     {
         return $this->app->make('documenter.filament')->generate();
     }
 
-
     /**
      * Generate the contributing file.
      *
-     * @param  array  $documentation
+     * @param  array  $documentation An associative array of documentation types and their content
      * @return void
      */
     public function generateContributingFile($documentation)
@@ -137,8 +156,8 @@ class LaravelDocumenter
     /**
      * Format the documentation array into a string.
      *
-     * @param  array  $documentation
-     * @return string
+     * @param  array  $documentation An associative array of documentation types and their content
+     * @return string The formatted documentation string
      */
     protected function formatDocumentation($documentation)
     {
@@ -152,8 +171,8 @@ class LaravelDocumenter
     /**
      * Get the path to a stub file.
      *
-     * @param  string  $stub
-     * @return string
+     * @param  string  $stub The name of the stub file
+     * @return string The full path to the stub file
      */
     protected function getStubPath($stub)
     {
