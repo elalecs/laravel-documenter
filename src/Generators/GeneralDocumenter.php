@@ -150,6 +150,40 @@ class GeneralDocumenter extends BasePhpParserDocumenter
     }
 
     /**
+     * Get the description from the docblock of a node.
+     *
+     * @param Node $node The node to get the description from
+     * @return string The description if found, otherwise a default message
+     */
+    protected function getDocComment(Node $node)
+    {
+        if ($node->getDocComment()) {
+            $docComment = $node->getDocComment()->getText();
+            
+            // Remove the opening and closing tags of the doc comment
+            $docComment = preg_replace('/^\/\*\*|\*\/$/s', '', $docComment);
+            
+            // Remove asterisks at the beginning of each line
+            $docComment = preg_replace('/^\s*\*\s?/m', '', $docComment);
+            
+            // Remove the class name line if it exists
+            $docComment = preg_replace('/^(Class|Interface|Trait)\s+\w+\s*$/m', '', $docComment);
+            
+            // Remove any @package or other tags
+            $docComment = preg_replace('/@\w+.*$/m', '', $docComment);
+            
+            // Trim any extra whitespace
+            $description = trim($docComment);
+            
+            if (!empty($description)) {
+                return $description;
+            }
+        }
+        
+        return 'No description provided.';
+    }
+
+    /**
      * Get the class description from the AST.
      * 
      * @param array $ast
@@ -267,12 +301,11 @@ class GeneralDocumenter extends BasePhpParserDocumenter
         $this->log('info', 'Formatting documentation');
         $output = '';
         foreach ($this->documentation as $section => $classes) {
-            $output .= View::file($this->stubPath, [
-                'sectionName' => $section,
-                'classes' => array_map(function($class) {
+            if (!empty($classes)) {
+                $formattedClasses = array_map(function($fullClassName, $class) {
                     return (object) [
-                        'namespace' => Str::beforeLast(key($class), '\\'),
-                        'className' => Str::afterLast(key($class), '\\'),
+                        'namespace' => Str::beforeLast($fullClassName, '\\'),
+                        'className' => Str::afterLast($fullClassName, '\\'),
                         'description' => $class['description'],
                         'traits' => $class['traits'],
                         'properties' => array_map(function($prop) {
@@ -282,8 +315,13 @@ class GeneralDocumenter extends BasePhpParserDocumenter
                             return (object) $method;
                         }, $class['methods']),
                     ];
-                }, $classes),
-            ])->render();
+                }, array_keys($classes), $classes);
+
+                $output .= View::file($this->stubPath, [
+                    'sectionName' => $section,
+                    'classes' => $formattedClasses,
+                ])->render();
+            }
         }
         return $output;
     }
