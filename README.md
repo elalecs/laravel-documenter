@@ -114,10 +114,6 @@ For more details on how to contribute, please check our [CONTRIBUTING.md](CONTRI
 
 The Laravel Documenter is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
 
-## Support
-
-If you discover any security-related issues, please email your.email@example.com instead of using the issue tracker.
-
 ## Credits
 
 - [Alex Galindo](https://github.com/elalecs)
