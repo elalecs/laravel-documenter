@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\View;
 use PhpParser\Node;
 use PhpParser\NodeFinder;
+use PhpParser\NodeDumper;
 
 /**
  * Class ModelDocumenter
@@ -90,7 +91,6 @@ class ModelDocumenter extends BasePhpParserDocumenter
      */
     public function generate()
     {
-        $this->log('info', 'Generating model documentation');
         $models = $this->getModels();
         $documentation = '';
 
@@ -107,7 +107,6 @@ class ModelDocumenter extends BasePhpParserDocumenter
      */
     protected function getModels()
     {
-        $this->log('info', 'Getting model files');
         $modelPath = $this->config['model_path'] ?? app_path('Models');
         return File::allFiles($modelPath);
     }
@@ -119,7 +118,6 @@ class ModelDocumenter extends BasePhpParserDocumenter
      */
     protected function documentModel($modelFile)
     {
-        $this->log('info', 'Documenting model: ' . $modelFile->getFilename());
         $ast = $this->parseFile($modelFile->getPathname());
 
         $this->extractModelInfo($ast);
@@ -142,7 +140,6 @@ class ModelDocumenter extends BasePhpParserDocumenter
      */
     protected function convertScopesToArray()
     {
-        $this->log('info', 'Converting scopes to array');
         return array_map(function ($scope) {
             return [
                 'name' => $scope['name'],
@@ -157,7 +154,6 @@ class ModelDocumenter extends BasePhpParserDocumenter
      */
     protected function convertCastsToArray()
     {
-        $this->log('info', 'Converting casts to array');
         return array_map(function ($value, $key) {
             return [
                 'attribute' => $key instanceof Node\Scalar\String_ ? $key->value : (string)$key,
@@ -172,7 +168,6 @@ class ModelDocumenter extends BasePhpParserDocumenter
      */
     protected function extractModelInfo($ast)
     {
-        $this->log('info', 'Extracting model information');
         $nodeFinder = new NodeFinder;
         
         $classNode = $nodeFinder->findFirst($ast, function(Node $node) {
@@ -200,7 +195,6 @@ class ModelDocumenter extends BasePhpParserDocumenter
      */
     protected function extractProperty(Node\Stmt\Property $property)
     {
-        $this->log('info', 'Extracting property information');
         $propertyName = $property->props[0]->name->toString();
         
         if ($propertyName === 'table' && isset($property->props[0]->default)) {
@@ -220,7 +214,6 @@ class ModelDocumenter extends BasePhpParserDocumenter
      */
     protected function extractRelationship(Node\Stmt\ClassMethod $method)
     {
-        $this->log('info', 'Extracting relationship information');
         $relationshipMethods = ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany', 'morphTo', 'morphMany', 'morphToMany'];
         
         $nodeFinder = new NodeFinder;
@@ -243,7 +236,6 @@ class ModelDocumenter extends BasePhpParserDocumenter
      */
     protected function extractScope(Node\Stmt\ClassMethod $method)
     {
-        $this->log('info', 'Extracting scope information');
         if (strpos($method->name->toString(), 'scope') === 0) {
             $scopeName = lcfirst(substr($method->name->toString(), 5));
             $this->scopes[] = [
@@ -260,7 +252,6 @@ class ModelDocumenter extends BasePhpParserDocumenter
      */
     protected function extractCasts($node)
     {
-        $this->log('info', 'Extracting casts information');
         $casts = [];
         if ($node instanceof Node\Expr\Array_) {
             foreach ($node->items as $item) {
@@ -283,7 +274,6 @@ class ModelDocumenter extends BasePhpParserDocumenter
      */
     protected function getModelDescription($ast)
     {
-        $this->log('info', 'Getting model description');
         $finder = new NodeFinder;
         $classNode = $finder->findFirst($ast, function(Node $node) {
             return $node instanceof Node\Stmt\Class_;
@@ -291,8 +281,24 @@ class ModelDocumenter extends BasePhpParserDocumenter
 
         if ($classNode && $classNode->getDocComment()) {
             $docComment = $classNode->getDocComment()->getText();
-            if (preg_match('/@description\s+(.+)/s', $docComment, $matches)) {
-                return trim($matches[1]);
+            
+            // Remove the opening and closing tags of the doc comment
+            $docComment = preg_replace('/^\/\*\*|\*\/$/s', '', $docComment);
+            
+            // Remove asterisks at the beginning of each line
+            $docComment = preg_replace('/^\s*\*\s?/m', '', $docComment);
+            
+            // Remove the class name line if it exists
+            $docComment = preg_replace('/^Class\s+\w+\s*$/m', '', $docComment);
+            
+            // Remove any @package or other tags
+            $docComment = preg_replace('/@\w+.*$/m', '', $docComment);
+            
+            // Trim any extra whitespace
+            $description = trim($docComment);
+            
+            if (!empty($description)) {
+                return $description;
             }
         }
 

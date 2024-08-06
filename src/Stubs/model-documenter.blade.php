@@ -1,3 +1,4 @@
+
 ## Model: {{ $modelName }}
 
 {{ $description }}
@@ -31,3 +32,5 @@
 - {{ $cast['attribute'] }}: {{ $cast['type'] }}
 @endforeach
 @endif
+
+----
