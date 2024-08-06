@@ -158,54 +158,93 @@ class FilamentDocumenter extends BasePhpParserDocumenter
     {
         $schema = [];
         $nodeFinder = new NodeFinder;
+        
         $schemaNodes = $nodeFinder->find($method, function(Node $node) {
             return $node instanceof Node\Expr\MethodCall && $node->name->name === 'schema';
         });
-
+    
         foreach ($schemaNodes as $schemaNode) {
             if (isset($schemaNode->args[0]) && $schemaNode->args[0]->value instanceof Node\Expr\Array_) {
                 foreach ($schemaNode->args[0]->value->items as $item) {
-                    if ($item->value instanceof Node\Expr\MethodCall) {
-                        $schema[] = $this->extractFormField($item->value);
-                    }
+                    $this->extractSchemaItem($item->value, $schema, null, $nodeFinder);
                 }
             }
         }
-
+    
         return $schema;
     }
-
-    /**
-     * Extract form field information
-     *
-     * @param Node\Expr\MethodCall $node Method call node
-     * @return array Form field information
-     */
-    protected function extractFormField(Node\Expr\MethodCall $node)
+    
+    protected function extractSchemaItem($node, &$schema, $parentComponent = null, NodeFinder $nodeFinder)
     {
-        $field = [
-            'type' => $node->name->name,
-            'name' => '',
-            'label' => '',
-        ];
-
-        foreach ($node->args as $arg) {
-            if ($arg->value instanceof Node\Scalar\String_) {
-                $field['name'] = $arg->value->value;
-                break;
+        if ($node instanceof Node\Expr\MethodCall) {
+            $componentType = $this->getComponentType($node);
+            $field = [
+                'type' => $componentType,
+                'name' => $this->getFieldName($node),
+                'label' => $this->getFieldLabel($node),
+            ];
+    
+            if ($parentComponent) {
+                $field['parent'] = $parentComponent;
+            }
+    
+            $schema[] = $field;
+    
+            // Recursively extract nested schema
+            $schemaMethod = $nodeFinder->findFirst($node, function(Node $n) {
+                return $n instanceof Node\Expr\MethodCall && $n->name->name === 'schema';
+            });
+    
+            if ($schemaMethod && isset($schemaMethod->args[0]) && $schemaMethod->args[0]->value instanceof Node\Expr\Array_) {
+                foreach ($schemaMethod->args[0]->value->items as $item) {
+                    $this->extractSchemaItem($item->value, $schema, $componentType, $nodeFinder);
+                }
             }
         }
-
-        $nodeFinder = new NodeFinder;
-        $labelNode = $nodeFinder->findFirst($node, function(Node $n) {
-            return $n instanceof Node\Expr\MethodCall && $n->name->name === 'label';
-        });
-
-        if ($labelNode && isset($labelNode->args[0]) && $labelNode->args[0]->value instanceof Node\Scalar\String_) {
-            $field['label'] = $labelNode->args[0]->value->value;
+    }
+    
+    protected function getComponentType(Node\Expr\MethodCall $node)
+    {
+        while ($node->var instanceof Node\Expr\MethodCall) {
+            $node = $node->var;
         }
-
-        return $field;
+        
+        if ($node->var instanceof Node\Expr\StaticCall) {
+            return $node->var->class->getLast();
+        }
+        
+        return 'Unknown';
+    }
+    
+    protected function getFieldName(Node\Expr\MethodCall $node)
+    {
+        $makeMethod = $this->findMethodCall($node, 'make');
+        if ($makeMethod && isset($makeMethod->args[0]) && $makeMethod->args[0]->value instanceof Node\Scalar\String_) {
+            return $makeMethod->args[0]->value->value;
+        }
+        return '';
+    }
+    
+    protected function getFieldLabel(Node\Expr\MethodCall $node)
+    {
+        $labelMethod = $this->findMethodCall($node, 'label');
+        if ($labelMethod && isset($labelMethod->args[0]) && $labelMethod->args[0]->value instanceof Node\Scalar\String_) {
+            return $labelMethod->args[0]->value->value;
+        }
+        return '';
+    }
+    
+    protected function findMethodCall(Node\Expr\MethodCall $node, $methodName)
+    {
+        if ($node->name->name === $methodName) {
+            return $node;
+        }
+        
+        if ($node->var instanceof Node\Expr\MethodCall) {
+            return $this->findMethodCall($node->var, $methodName);
+        }
+        
+        return null;
     }
 
     /**
@@ -507,9 +546,6 @@ class FilamentDocumenter extends BasePhpParserDocumenter
             return $pages;
         }
 
-        $nodeDumper = new NodeDumper;
-        $this->log('debug', 'Full AST of getPages method: ' . $nodeDumper->dump($pagesMethod));
-
         $nodeFinder = new NodeFinder;
         $returnStmt = $nodeFinder->findFirst($pagesMethod, function(Node $n) {
             return $n instanceof Node\Stmt\Return_;
@@ -538,8 +574,6 @@ class FilamentDocumenter extends BasePhpParserDocumenter
                 $this->log('warning', 'Unexpected structure in getPages array item: ' . $nodeDumper->dump($item));
             }
         }
-
-        $this->log('info', 'Extracted pages: ' . json_encode($pages));
 
         return $pages;
     }

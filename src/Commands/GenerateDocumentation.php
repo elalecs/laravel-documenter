@@ -4,6 +4,7 @@ namespace Elalecs\LaravelDocumenter\Commands;
 
 use Illuminate\Console\Command;
 use Elalecs\LaravelDocumenter\LaravelDocumenter;
+use Illuminate\Support\Facades\File;
 
 class GenerateDocumentation extends Command
 {

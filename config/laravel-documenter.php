@@ -65,7 +65,7 @@ return [
     |
     */
     'php_parser_options' => [
-        'kind' => PhpParser\PhpVersion::fromString('8.0'),
+        
     ],
 
     /*

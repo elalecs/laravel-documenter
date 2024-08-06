@@ -75,12 +75,19 @@ abstract class BasePhpParserDocumenter
      */
     protected function log($level, $message)
     {
-        if (isset($this->config['logging']['enabled']) && $this->config['logging']['enabled']) {
-            $logLevel = $this->config['logging']['level'] ?? 'warning';
-            if ($this->shouldLog($level, $logLevel)) {
-                Log::$level($message);
+        if (config('laravel-documenter.logging.enabled', false)) {
+            $configLevel = config('laravel-documenter.logging.level', 'warning');
+            if ($this->shouldLog($level, $configLevel)) {
+                $timestamp = $this->getMicrotime();
+                Log::$level("[$timestamp] $message");
             }
         }
+    }
+
+    protected function getMicrotime()
+    {
+        $mt = explode(' ', microtime());
+        return substr((string)$mt[0], 1, 4);
     }
 
     /**
