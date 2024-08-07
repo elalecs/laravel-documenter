@@ -77,12 +77,22 @@ class ApiDocumenter extends BasePhpParserDocumenter
     {
         $this->log('info', 'Generating API documentation');
         $output = new BufferedOutput();
-        Artisan::call('route:list', [
+        $exitCode = Artisan::call('route:list', [
             '--json' => true,
             '--path' => 'api',
         ], $output);
 
+        if ($exitCode !== 0) {
+            $this->log('error', 'Error executing route:list command');
+            return "Error generating API documentation. Please verify your routes and configuration.";
+        }
+
         $routes = json_decode($output->fetch(), true);
+
+        if (is_null($routes)) {
+            $this->log('warning', 'Unable to retrieve routes or JSON is invalid');
+            return "Unable to generate API documentation. No routes found or output format is invalid.";
+        }
 
         $tableData = $this->formatRoutesAsTable($routes);
 
@@ -106,13 +116,18 @@ class ApiDocumenter extends BasePhpParserDocumenter
         $this->log('info', 'Formatting routes as table');
         $tableData = [];
 
+        if (!is_array($routes)) {
+            $this->log('warning', 'Routes are not a valid array');
+            return $tableData;
+        }
+
         foreach ($routes as $route) {
             $tableData[] = [
-                'method' => $this->formatMethod($route['method']),
-                'uri' => $route['uri'],
+                'method' => $this->formatMethod($route['method'] ?? ''),
+                'uri' => $route['uri'] ?? '',
                 'name' => $route['name'] ?? '',
-                'action' => $route['action'],
-                'middleware' => $this->formatMiddleware($route['middleware']),
+                'action' => $route['action'] ?? '',
+                'middleware' => $this->formatMiddleware($route['middleware'] ?? ''),
             ];
         }
 

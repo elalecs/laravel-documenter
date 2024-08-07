@@ -49,7 +49,19 @@ class FilamentDocumenter extends BasePhpParserDocumenter
      */
     public function generate()
     {
+        $filamentPath = $this->config['path'] ?? app_path('Filament');
+
+        if (!File::isDirectory($filamentPath)) {
+            $this->log('info', 'Filament folder not found. Skipping Filament documentation.');
+            return "No Filament resources found to document.\n";
+        }
+
         $resourceFiles = $this->getResourceFiles();
+
+        if (empty($resourceFiles)) {
+            $this->log('info', 'No Filament resource files found.');
+            return "No Filament resource files found to document.\n";
+        }
 
         foreach ($resourceFiles as $file) {
             $this->documentResource($file);
@@ -66,6 +78,12 @@ class FilamentDocumenter extends BasePhpParserDocumenter
     protected function getResourceFiles()
     {
         $path = $this->config['path'] ?? app_path('Filament/Resources');
+
+        if (!File::isDirectory($path)) {
+            $this->log('info', "The Filament resources folder does not exist: $path");
+            return [];
+        }
+
         return File::allFiles($path);
     }
 

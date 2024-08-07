@@ -63,6 +63,10 @@ class LaravelDocumenter
             'filament' => $this->generateFilamentDocumentation(),
         ];
 
+        $documentation = array_filter($documentation, function($content) {
+            return !empty($content);
+        });    
+
         $this->generateIndividualFiles($documentation);
         $this->generateMainContributingFile($documentation);
     }
